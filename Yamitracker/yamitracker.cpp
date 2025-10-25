@@ -10,55 +10,70 @@
 
 void SerialReader::run()
 {
-    int fd = open("/dev/dmmidi1", O_RDWR | O_NOCTTY);
-    if (fd < 0) {
-        emit error("Cannot open /dev/dmmidi1");
-        return;
-    }
-
-    struct termios tty;
-    tcgetattr(fd, &tty);
-    cfsetospeed(&tty, B115200);
-    cfsetispeed(&tty, B115200);
-    tty.c_cflag |= (CLOCAL | CREAD | CS8);
-    tty.c_cc[VMIN] = 1;
-    tcsetattr(fd, TCSANOW, &tty);
-
-    unsigned char byte;
-    while (read(fd, &byte, 1) > 0) {
-        if (byte == 0xF8 || byte == 0xFE) {
+    while (!shouldStop) {
+        int fd = open("/dev/dmmidi1", O_RDWR | O_NOCTTY);
+        if (fd < 0) {
+            emit error("Cannot open /dev/dmmidi1");
+            emit connectionStatusChanged(false);
+            // Ждем перед повторной попыткой
+            sleep(2);
             continue;
         }
 
-        if (byte & 0x80) {
-            if ((byte & 0xF0) == 0x90) {
-                unsigned char note, velocity;
-                if (read(fd, &note, 1) > 0 && read(fd, &velocity, 1) > 0) {
-                    QString hexNote = QString("%1").arg(note, 2, 16, QChar('0')).toUpper();
+        emit connectionStatusChanged(true);
 
-                    if (velocity == 0)
-                        emit noteOffReceived(hexNote);
-                    else
-                        emit noteOnReceived(hexNote, velocity);
-                }
+        struct termios tty;
+        tcgetattr(fd, &tty);
+        cfsetospeed(&tty, B115200);
+        cfsetispeed(&tty, B115200);
+        tty.c_cflag |= (CLOCAL | CREAD | CS8);
+        tty.c_cc[VMIN] = 1;
+        tcsetattr(fd, TCSANOW, &tty);
+
+        unsigned char byte;
+        while (!shouldStop && read(fd, &byte, 1) > 0) {
+            if (byte == 0xF8 || byte == 0xFE) {
+                continue;
             }
-            else if ((byte & 0xF0) == 0x80) {
-                unsigned char note, velocity;
-                if (read(fd, &note, 1) > 0 && read(fd, &velocity, 1) > 0) {
-                    QString hexNote = QString("%1").arg(note, 2, 16, QChar('0')).toUpper();
-                    emit noteOffReceived(hexNote);
+
+            if (byte & 0x80) {
+                if ((byte & 0xF0) == 0x90) {
+                    unsigned char note, velocity;
+                    if (read(fd, &note, 1) > 0 && read(fd, &velocity, 1) > 0) {
+                        QString hexNote = QString("%1").arg(note, 2, 16, QChar('0')).toUpper();
+
+                        if (velocity == 0)
+                            emit noteOffReceived(hexNote);
+                        else
+                            emit noteOnReceived(hexNote, velocity);
+                    }
+                }
+                else if ((byte & 0xF0) == 0x80) {
+                    unsigned char note, velocity;
+                    if (read(fd, &note, 1) > 0 && read(fd, &velocity, 1) > 0) {
+                        QString hexNote = QString("%1").arg(note, 2, 16, QChar('0')).toUpper();
+                        emit noteOffReceived(hexNote);
+                    }
                 }
             }
         }
-    }
 
-    close(fd);
+        close(fd);
+        emit connectionStatusChanged(false);
+        
+        if (!shouldStop) {
+            emit error("Connection lost. Attempting to reconnect...");
+            sleep(2); // Ждем перед повторной попыткой подключения
+        }
+    }
 }
 
 Yamitracker::Yamitracker(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::Yamitracker)
     , serialReader(new SerialReader(this))
+    , reconnectTimer(new QTimer(this))
+    , isConnected(false)
 {
     ui->setupUi(this);
     initializeKeyButtons();
@@ -66,8 +81,13 @@ Yamitracker::Yamitracker(QWidget *parent)
     connect(serialReader, &SerialReader::noteOnReceived, this, &Yamitracker::onNoteOnReceived);
     connect(serialReader, &SerialReader::noteOffReceived, this, &Yamitracker::onNoteOffReceived);
     connect(serialReader, &SerialReader::error, this, &Yamitracker::onError);
+    connect(serialReader, &SerialReader::connectionStatusChanged, this, &Yamitracker::onConnectionStatusChanged);
     connect(ui->playButton, &QPushButton::clicked, this, &Yamitracker::onPlayClicked);
     connect(ui->stopButton, &QPushButton::clicked, this, &Yamitracker::onStopClicked);
+    
+    // Таймер для периодической проверки соединения
+    connect(reconnectTimer, &QTimer::timeout, this, &Yamitracker::attemptReconnect);
+    reconnectTimer->start(5000); // Проверка каждые 5 секунд
 
     setStyleSheet(
         "QMainWindow { background-color: #2b2b2b; color: white; }"
@@ -81,21 +101,32 @@ Yamitracker::Yamitracker(QWidget *parent)
         "QProgressBar::chunk { background: #4CAF50; }"
     );
 
-    serialReader->start();
+    startSerialReader();
     setWindowTitle("Yamaha PSR-E333 Monitor");
 }
 
 Yamitracker::~Yamitracker()
 {
-    if (serialReader && serialReader->isRunning()) {
-        serialReader->terminate();
-        serialReader->wait();
+    if (serialReader) {
+        serialReader->stop();
+        if (serialReader->isRunning()) {
+            serialReader->terminate();
+            serialReader->wait();
+        }
     }
     delete ui;
 }
 
+void Yamitracker::startSerialReader()
+{
+    if (serialReader && !serialReader->isRunning()) {
+        serialReader->start();
+    }
+}
+
 void Yamitracker::initializeKeyButtons()
 {
+    // ... существующий код без изменений ...
     QList<QPushButton*> whiteKeys = {
         ui->key_C1, ui->key_D1, ui->key_E1, ui->key_F1, ui->key_G1, ui->key_A1, ui->key_B1,
         ui->key_C2, ui->key_D2, ui->key_E2, ui->key_F2, ui->key_G2, ui->key_A2, ui->key_B2,
@@ -126,6 +157,7 @@ void Yamitracker::initializeKeyButtons()
 
 void Yamitracker::onNoteOnReceived(const QString &data, int velocity)
 {
+    // ... существующий код без изменений ...
     QHash<QString, QString> noteMapping = {
         {"24","C1"},{"25","C#1"},{"26","D1"},{"27","D#1"},{"28","E1"},{"29","F1"},{"2A","F#1"},{"2B","G1"},{"2C","G#1"},{"2D","A1"},{"2E","A#1"},{"2F","B1"},
         {"30","C2"},{"31","C#2"},{"32","D2"},{"33","D#2"},{"34","E2"},{"35","F2"},{"36","F#2"},{"37","G2"},{"38","G#2"},{"39","A2"},{"3A","A#2"},{"3B","B2"},
@@ -145,11 +177,11 @@ void Yamitracker::onNoteOnReceived(const QString &data, int velocity)
 
     int volume = (velocity * 100) / 127;
     ui->volumeBar->setValue(volume);
-
 }
 
 void Yamitracker::onNoteOffReceived(const QString &data)
 {
+    // ... существующий код без изменений ...
     QHash<QString, QString> noteMapping = {
         {"24","C1"},{"25","C#1"},{"26","D1"},{"27","D#1"},{"28","E1"},{"29","F1"},{"2A","F#1"},{"2B","G1"},{"2C","G#1"},{"2D","A1"},{"2E","A#1"},{"2F","B1"},
         {"30","C2"},{"31","C#2"},{"32","D2"},{"33","D#2"},{"34","E2"},{"35","F2"},{"36","F#2"},{"37","G2"},{"38","G#2"},{"39","A2"},{"3A","A#2"},{"3B","B2"},
@@ -170,22 +202,48 @@ void Yamitracker::onNoteOffReceived(const QString &data)
     if (currentlyPressedKeys.isEmpty()) {
         ui->volumeBar->setValue(0);
     }
-
 }
+
+void Yamitracker::onConnectionStatusChanged(bool connected)
+{
+    isConnected = connected;
+    if (connected) {
+        ui->statusLabel->setText("Статус: Подключено к синтезатору");
+        ui->statusLabel->setStyleSheet("color: green;");
+    } else {
+        ui->statusLabel->setText("Статус: Отключено (переподключение...)");
+        ui->statusLabel->setStyleSheet("color: red;");
+    }
+}
+
+void Yamitracker::attemptReconnect()
+{
+    if (!isConnected && (!serialReader || !serialReader->isRunning())) {
+        qDebug() << "Attempting to reconnect...";
+        startSerialReader();
+    }
+}
+
 void Yamitracker::onError(const QString &message)
 {
     ui->statusLabel->setText("Ошибка: " + message);
-    QMessageBox::warning(this, "Ошибка", message);
+    ui->statusLabel->setStyleSheet("color: orange;");
+    // Не показываем MessageBox для ошибок подключения, чтобы не раздражать пользователя
+    if (!message.contains("reconnect", Qt::CaseInsensitive)) {
+        QMessageBox::warning(this, "Ошибка", message);
+    }
 }
 
 void Yamitracker::onPlayClicked()
 {
     ui->statusLabel->setText("Воспроизведение...");
+    ui->statusLabel->setStyleSheet("color: blue;");
 }
 
 void Yamitracker::onStopClicked()
 {
     ui->statusLabel->setText("Остановлено");
+    ui->statusLabel->setStyleSheet("color: white;");
     clearAllHighlights();
     currentlyPressedKeys.clear();
     ui->keysInfoLabel->setText("Нажато клавиш: 0");
