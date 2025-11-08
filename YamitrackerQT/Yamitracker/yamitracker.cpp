@@ -1,4 +1,3 @@
-// yamitracker.cpp
 #include "yamitracker.h"
 #include "ui_yamitracker.h"
 
@@ -8,7 +7,7 @@
 #include <QMessageBox>
 #include <QTimer>
 #include <QDebug>
-#include <QDateTime>  // Добавьте этот include
+#include <QDateTime>
 
 void SerialReader::run()
 {
@@ -316,10 +315,8 @@ void Yamitracker::clearAllHighlights()
     }
 }
 
-// Добавьте реализацию отсутствующего метода
 void Yamitracker::clearStatusMessage()
 {
-    // Реализация по вашему усмотрению
     ui->statusLabel->setText("Статус: Готов");
     ui->statusLabel->setStyleSheet("color: white;");
 }

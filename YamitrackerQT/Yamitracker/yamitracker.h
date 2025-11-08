@@ -8,7 +8,7 @@
 #include <QSet>
 #include <QTimer>
 #include <QHash>
-#include <QDateTime>  // Добавьте этот include
+#include <QDateTime>
 #include "simplemidiwriter.h"
 
 QT_BEGIN_NAMESPACE
@@ -67,8 +67,8 @@ private:
     QSet<QString> currentlyPressedKeys;
     QTimer *reconnectTimer;
     bool isConnected;
-    SimpleMidiWriter *midiWriter;        // Перенесли сюда
-    double recordingStartTime;           // Перенесли сюда
+    SimpleMidiWriter *midiWriter;
+    double recordingStartTime;
 
     void initializeKeyButtons();
     void highlightKey(const QString &note);
