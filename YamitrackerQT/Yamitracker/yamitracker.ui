@@ -58,6 +58,20 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QLabel" name="deviceLabel">
+        <property name="text">
+         <string>Устройство: Не подключено</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="refreshDevicesButton">
+        <property name="text">
+         <string>Обновить устройства</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
     <item>

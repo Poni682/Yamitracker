@@ -1,17 +1,20 @@
 QT += core gui widgets
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+CONFIG += c++17
 
-CONFIG += c++11
+# Явно указываем Qt6
+QT_MAJOR_VERSION = 6
 
 SOURCES += \
     main.cpp \
     yamitracker.cpp \
-    simplemidiwriter.cpp
+    simplemidiwriter.cpp \
+    yamimedia.cpp
 
 HEADERS += \
     yamitracker.h \
-    simplemidiwriter.h
+    simplemidiwriter.h \
+    yamimedia.h
 
 FORMS += \
     yamitracker.ui

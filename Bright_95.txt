@@ -1,0 +1,157 @@
+[2025-12-10 11:00:39] STATUS: Запуск логгирования MIDI данных
+[2025-12-10 11:00:39] STATUS: Устройство: /dev/dmmidi1
+[2025-12-10 11:00:39] STATUS: Устройство успешно открыто
+[2025-12-10 11:00:39] STATUS: Настройка порта завершена, скорость: 115200 бод
+[2025-12-10 11:00:45] CONTROL: Controller=0x00 Value=0
+[2025-12-10 11:00:45] CONTROL: Controller=0x20 Value=112
+[2025-12-10 11:00:45] PROGRAM_CHANGE: Program=100
+[2025-12-10 11:00:45] STATUS: Неизвестное MIDI сообщение: 0xF0
+[2025-12-10 11:00:45] STATUS: Данные без статуса: 0x43
+[2025-12-10 11:00:45] STATUS: Данные без статуса: 0x10
+[2025-12-10 11:00:45] STATUS: Данные без статуса: 0x4C
+[2025-12-10 11:00:45] STATUS: Данные без статуса: 0x08
+[2025-12-10 11:00:45] STATUS: Данные без статуса: 0x00
+[2025-12-10 11:00:45] STATUS: Данные без статуса: 0x0D
+[2025-12-10 11:00:45] STATUS: Данные без статуса: 0x40
+[2025-12-10 11:00:45] STATUS: Неизвестное MIDI сообщение: 0xF7
+[2025-12-10 11:00:45] CONTROL: Controller=0x00 Value=0
+[2025-12-10 11:00:45] CONTROL: Controller=0x20 Value=66
+[2025-12-10 11:00:45] PROGRAM_CHANGE: Program=96
+[2025-12-10 11:00:45] STATUS: Неизвестное MIDI сообщение: 0xF0
+[2025-12-10 11:00:45] STATUS: Данные без статуса: 0x43
+[2025-12-10 11:00:45] STATUS: Данные без статуса: 0x10
+[2025-12-10 11:00:45] STATUS: Данные без статуса: 0x4C
+[2025-12-10 11:00:45] STATUS: Данные без статуса: 0x08
+[2025-12-10 11:00:45] STATUS: Данные без статуса: 0x01
+[2025-12-10 11:00:45] STATUS: Данные без статуса: 0x0D
+[2025-12-10 11:00:45] STATUS: Данные без статуса: 0x40
+[2025-12-10 11:00:45] STATUS: Неизвестное MIDI сообщение: 0xF7
+[2025-12-10 11:00:45] CONTROL: Controller=0x07 (Volume) Value=80
+[2025-12-10 11:00:45] CONTROL: Controller=0x5B Value=40
+[2025-12-10 11:00:45] CONTROL: Controller=0x5D Value=40
+[2025-12-10 11:00:45] CONTROL: Controller=0x07 (Volume) Value=70
+[2025-12-10 11:00:45] CONTROL: Controller=0x5B Value=40
+[2025-12-10 11:00:45] CONTROL: Controller=0x5D Value=0
+[2025-12-10 11:00:53] NOTE_ON: Hex=24 Note=C1 Velocity=67
+[2025-12-10 11:00:54] NOTE_OFF: Hex=24 Note=C1
+[2025-12-10 11:00:54] NOTE_ON: Hex=25 Note=C#1 Velocity=57
+[2025-12-10 11:00:55] NOTE_OFF: Hex=25 Note=C#1
+[2025-12-10 11:00:55] NOTE_ON: Hex=26 Note=D1 Velocity=41
+[2025-12-10 11:00:56] NOTE_OFF: Hex=26 Note=D1
+[2025-12-10 11:00:56] NOTE_ON: Hex=27 Note=D#1 Velocity=67
+[2025-12-10 11:00:57] NOTE_OFF: Hex=27 Note=D#1
+[2025-12-10 11:00:57] NOTE_ON: Hex=28 Note=E1 Velocity=49
+[2025-12-10 11:00:57] NOTE_OFF: Hex=28 Note=E1
+[2025-12-10 11:00:58] NOTE_ON: Hex=29 Note=F1 Velocity=55
+[2025-12-10 11:00:58] NOTE_OFF: Hex=29 Note=F1
+[2025-12-10 11:00:58] NOTE_ON: Hex=2A Note=F#1 Velocity=53
+[2025-12-10 11:00:59] NOTE_OFF: Hex=2A Note=F#1
+[2025-12-10 11:00:59] NOTE_ON: Hex=2B Note=G1 Velocity=49
+[2025-12-10 11:01:00] NOTE_OFF: Hex=2B Note=G1
+[2025-12-10 11:01:00] NOTE_ON: Hex=2C Note=G#1 Velocity=55
+[2025-12-10 11:01:01] NOTE_OFF: Hex=2C Note=G#1
+[2025-12-10 11:01:01] NOTE_ON: Hex=2D Note=A1 Velocity=55
+[2025-12-10 11:01:01] NOTE_OFF: Hex=2D Note=A1
+[2025-12-10 11:01:01] NOTE_ON: Hex=2E Note=A#1 Velocity=54
+[2025-12-10 11:01:02] NOTE_OFF: Hex=2E Note=A#1
+[2025-12-10 11:01:02] NOTE_ON: Hex=2F Note=B1 Velocity=55
+[2025-12-10 11:01:03] NOTE_OFF: Hex=2F Note=B1
+[2025-12-10 11:01:03] NOTE_ON: Hex=30 Note=C2 Velocity=55
+[2025-12-10 11:01:04] NOTE_OFF: Hex=30 Note=C2
+[2025-12-10 11:01:04] NOTE_ON: Hex=31 Note=C#2 Velocity=57
+[2025-12-10 11:01:04] NOTE_OFF: Hex=31 Note=C#2
+[2025-12-10 11:01:05] NOTE_ON: Hex=32 Note=D2 Velocity=37
+[2025-12-10 11:01:05] NOTE_OFF: Hex=32 Note=D2
+[2025-12-10 11:01:05] NOTE_ON: Hex=33 Note=D#2 Velocity=64
+[2025-12-10 11:01:06] NOTE_OFF: Hex=33 Note=D#2
+[2025-12-10 11:01:06] NOTE_ON: Hex=34 Note=E2 Velocity=67
+[2025-12-10 11:01:07] NOTE_OFF: Hex=34 Note=E2
+[2025-12-10 11:01:07] NOTE_ON: Hex=35 Note=F2 Velocity=60
+[2025-12-10 11:01:07] NOTE_OFF: Hex=35 Note=F2
+[2025-12-10 11:01:07] NOTE_ON: Hex=36 Note=F#2 Velocity=36
+[2025-12-10 11:01:08] NOTE_OFF: Hex=36 Note=F#2
+[2025-12-10 11:01:08] NOTE_ON: Hex=37 Note=G2 Velocity=41
+[2025-12-10 11:01:09] NOTE_OFF: Hex=37 Note=G2
+[2025-12-10 11:01:09] NOTE_ON: Hex=38 Note=G#2 Velocity=59
+[2025-12-10 11:01:09] NOTE_OFF: Hex=38 Note=G#2
+[2025-12-10 11:01:10] NOTE_ON: Hex=39 Note=A2 Velocity=47
+[2025-12-10 11:01:10] NOTE_OFF: Hex=39 Note=A2
+[2025-12-10 11:01:10] NOTE_ON: Hex=3A Note=A#2 Velocity=64
+[2025-12-10 11:01:11] NOTE_OFF: Hex=3A Note=A#2
+[2025-12-10 11:01:11] NOTE_ON: Hex=3B Note=B2 Velocity=41
+[2025-12-10 11:01:11] NOTE_OFF: Hex=3B Note=B2
+[2025-12-10 11:01:12] NOTE_ON: Hex=3C Note=C3 Velocity=52
+[2025-12-10 11:01:12] NOTE_OFF: Hex=3C Note=C3
+[2025-12-10 11:01:12] NOTE_ON: Hex=3D Note=C#3 Velocity=55
+[2025-12-10 11:01:13] NOTE_OFF: Hex=3D Note=C#3
+[2025-12-10 11:01:13] NOTE_ON: Hex=3E Note=D3 Velocity=52
+[2025-12-10 11:01:13] NOTE_OFF: Hex=3E Note=D3
+[2025-12-10 11:01:14] NOTE_ON: Hex=3F Note=D#3 Velocity=53
+[2025-12-10 11:01:14] NOTE_OFF: Hex=3F Note=D#3
+[2025-12-10 11:01:14] NOTE_ON: Hex=40 Note=E3 Velocity=45
+[2025-12-10 11:01:15] NOTE_OFF: Hex=40 Note=E3
+[2025-12-10 11:01:15] NOTE_ON: Hex=41 Note=F3 Velocity=54
+[2025-12-10 11:01:15] NOTE_OFF: Hex=41 Note=F3
+[2025-12-10 11:01:15] NOTE_ON: Hex=42 Note=F#3 Velocity=57
+[2025-12-10 11:01:16] NOTE_OFF: Hex=42 Note=F#3
+[2025-12-10 11:01:16] NOTE_ON: Hex=43 Note=G3 Velocity=57
+[2025-12-10 11:01:16] NOTE_OFF: Hex=43 Note=G3
+[2025-12-10 11:01:17] NOTE_ON: Hex=44 Note=G#3 Velocity=60
+[2025-12-10 11:01:17] NOTE_OFF: Hex=44 Note=G#3
+[2025-12-10 11:01:17] NOTE_ON: Hex=45 Note=A3 Velocity=59
+[2025-12-10 11:01:17] NOTE_OFF: Hex=45 Note=A3
+[2025-12-10 11:01:18] NOTE_ON: Hex=46 Note=A#3 Velocity=57
+[2025-12-10 11:01:18] NOTE_OFF: Hex=46 Note=A#3
+[2025-12-10 11:01:18] NOTE_ON: Hex=47 Note=B3 Velocity=57
+[2025-12-10 11:01:19] NOTE_OFF: Hex=47 Note=B3
+[2025-12-10 11:01:19] NOTE_ON: Hex=48 Note=C4 Velocity=59
+[2025-12-10 11:01:19] NOTE_OFF: Hex=48 Note=C4
+[2025-12-10 11:01:20] NOTE_ON: Hex=49 Note=C#4 Velocity=58
+[2025-12-10 11:01:20] NOTE_OFF: Hex=49 Note=C#4
+[2025-12-10 11:01:20] NOTE_ON: Hex=4A Note=D4 Velocity=57
+[2025-12-10 11:01:21] NOTE_OFF: Hex=4A Note=D4
+[2025-12-10 11:01:21] NOTE_ON: Hex=4B Note=D#4 Velocity=51
+[2025-12-10 11:01:21] NOTE_OFF: Hex=4B Note=D#4
+[2025-12-10 11:01:21] NOTE_ON: Hex=4C Note=E4 Velocity=57
+[2025-12-10 11:01:22] NOTE_OFF: Hex=4C Note=E4
+[2025-12-10 11:01:22] NOTE_ON: Hex=4D Note=F4 Velocity=57
+[2025-12-10 11:01:22] NOTE_OFF: Hex=4D Note=F4
+[2025-12-10 11:01:23] NOTE_ON: Hex=4E Note=F#4 Velocity=47
+[2025-12-10 11:01:23] NOTE_OFF: Hex=4E Note=F#4
+[2025-12-10 11:01:23] NOTE_ON: Hex=4F Note=G4 Velocity=52
+[2025-12-10 11:01:24] NOTE_OFF: Hex=4F Note=G4
+[2025-12-10 11:01:24] NOTE_ON: Hex=50 Note=G#4 Velocity=57
+[2025-12-10 11:01:24] NOTE_OFF: Hex=50 Note=G#4
+[2025-12-10 11:01:24] NOTE_ON: Hex=51 Note=A4 Velocity=59
+[2025-12-10 11:01:25] NOTE_OFF: Hex=51 Note=A4
+[2025-12-10 11:01:25] NOTE_ON: Hex=52 Note=A#4 Velocity=62
+[2025-12-10 11:01:25] NOTE_OFF: Hex=52 Note=A#4
+[2025-12-10 11:01:25] NOTE_ON: Hex=53 Note=B4 Velocity=58
+[2025-12-10 11:01:26] NOTE_OFF: Hex=53 Note=B4
+[2025-12-10 11:01:26] NOTE_ON: Hex=54 Note=C5 Velocity=58
+[2025-12-10 11:01:26] NOTE_OFF: Hex=54 Note=C5
+[2025-12-10 11:01:26] NOTE_ON: Hex=55 Note=C#5 Velocity=61
+[2025-12-10 11:01:27] NOTE_OFF: Hex=55 Note=C#5
+[2025-12-10 11:01:27] NOTE_ON: Hex=56 Note=D5 Velocity=53
+[2025-12-10 11:01:27] NOTE_OFF: Hex=56 Note=D5
+[2025-12-10 11:01:28] NOTE_ON: Hex=57 Note=D#5 Velocity=60
+[2025-12-10 11:01:28] NOTE_OFF: Hex=57 Note=D#5
+[2025-12-10 11:01:28] NOTE_ON: Hex=58 Note=E5 Velocity=55
+[2025-12-10 11:01:28] NOTE_OFF: Hex=58 Note=E5
+[2025-12-10 11:01:29] NOTE_ON: Hex=59 Note=F5 Velocity=72
+[2025-12-10 11:01:29] NOTE_OFF: Hex=59 Note=F5
+[2025-12-10 11:01:29] NOTE_ON: Hex=5A Note=F#5 Velocity=72
+[2025-12-10 11:01:29] NOTE_OFF: Hex=5A Note=F#5
+[2025-12-10 11:01:30] NOTE_ON: Hex=5B Note=G5 Velocity=63
+[2025-12-10 11:01:30] NOTE_OFF: Hex=5B Note=G5
+[2025-12-10 11:01:30] NOTE_ON: Hex=5C Note=G#5 Velocity=66
+[2025-12-10 11:01:30] NOTE_OFF: Hex=5C Note=G#5
+[2025-12-10 11:01:31] NOTE_ON: Hex=5D Note=A5 Velocity=78
+[2025-12-10 11:01:31] NOTE_OFF: Hex=5D Note=A5
+[2025-12-10 11:01:31] NOTE_ON: Hex=5E Note=A#5 Velocity=63
+[2025-12-10 11:01:31] NOTE_OFF: Hex=5E Note=A#5
+[2025-12-10 11:01:32] NOTE_ON: Hex=5F Note=B5 Velocity=73
+[2025-12-10 11:01:32] NOTE_OFF: Hex=5F Note=B5
+[2025-12-10 11:01:32] NOTE_ON: Hex=60 Note=C6 Velocity=97
+[2025-12-10 11:01:32] NOTE_OFF: Hex=60 Note=C6
+[2025-12-10 11:01:34] STATUS: Логгирование остановлено

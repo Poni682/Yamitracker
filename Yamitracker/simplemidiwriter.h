@@ -1,4 +1,3 @@
-// simplemidiwriter.h
 #ifndef SIMPLEMIDIWRITER_H
 #define SIMPLEMIDIWRITER_H
 
@@ -8,11 +7,11 @@
 #include <QDataStream>
 
 struct MidiEvent {
-    double time;    // время в секундах
-    int type;       // тип события: 0x90 - note on, 0x80 - note off
-    int channel;    // канал (0-15)
-    int note;       // нота (0-127)
-    int velocity;   // скорость нажатия (0-127)
+    double time;
+    int type;
+    int channel;
+    int note;
+    int velocity;
 };
 
 class SimpleMidiWriter
@@ -41,4 +40,4 @@ private:
     void writeMidiTrack(QDataStream &stream);
 };
 
-#endif // SIMPLEMIDIWRITER_H
+#endif

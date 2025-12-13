@@ -8,20 +8,35 @@
 #include <QTimer>
 #include <QDebug>
 #include <QDateTime>
+#include <QFileDialog>
 
 void SerialReader::run()
 {
     while (!shouldStop) {
-        int fd = open("/dev/dmmidi1", O_RDWR | O_NOCTTY);
+        int fd = open(currentDevice.toUtf8().constData(), O_RDWR | O_NOCTTY);
         if (fd < 0) {
-            emit error("Cannot open /dev/dmmidi1");
+            emit error(QString("Cannot open %1").arg(currentDevice));
             emit connectionStatusChanged(false);
-            // Ждем перед повторной попыткой
             sleep(2);
             continue;
         }
 
         emit connectionStatusChanged(true);
+        
+        // Определяем производителя по имени устройства
+        QString manufacturer = "Unknown";
+        QString model = "Unknown";
+        
+        if (currentDevice.contains("yamaha", Qt::CaseInsensitive) || 
+            currentDevice.contains("psr", Qt::CaseInsensitive)) {
+            manufacturer = "Yamaha";
+            model = "PSR Series";
+        } else if (currentDevice.contains("dmmidi")) {
+            manufacturer = "Yamaha";
+            model = "PSR-E333 (Direct MIDI)";
+        }
+        
+        emit deviceInfoReceived(manufacturer, model);
 
         struct termios tty;
         tcgetattr(fd, &tty);
@@ -63,8 +78,8 @@ void SerialReader::run()
         emit connectionStatusChanged(false);
         
         if (!shouldStop) {
-            emit error("Connection lost. Attempting to reconnect...");
-            sleep(2); // Ждем перед повторной попыткой подключения
+            emit error(QString("Connection lost to %1. Attempting to reconnect...").arg(currentDevice));
+            sleep(2);
         }
     }
 }
@@ -76,21 +91,30 @@ Yamitracker::Yamitracker(QWidget *parent)
     , reconnectTimer(new QTimer(this))
     , isConnected(false)
     , midiWriter(new SimpleMidiWriter())
+    , yamiFile(new yami::YamiFile())
     , recordingStartTime(0)
+    , deviceDetector(new MidiDeviceDetector())
 {
     ui->setupUi(this);
+    
+    // Инициализируем ссылки на новые UI элементы
+    deviceLabel = ui->deviceLabel;
+    refreshDevicesButton = ui->refreshDevicesButton;
+    
     initializeKeyButtons();
+    initializeDeviceDetection();
 
     connect(serialReader, &SerialReader::noteOnReceived, this, &Yamitracker::onNoteOnReceived);
     connect(serialReader, &SerialReader::noteOffReceived, this, &Yamitracker::onNoteOffReceived);
     connect(serialReader, &SerialReader::error, this, &Yamitracker::onError);
     connect(serialReader, &SerialReader::connectionStatusChanged, this, &Yamitracker::onConnectionStatusChanged);
+    connect(serialReader, &SerialReader::deviceInfoReceived, this, &Yamitracker::onDeviceInfoReceived);
     connect(ui->playButton, &QPushButton::clicked, this, &Yamitracker::onPlayClicked);
     connect(ui->stopButton, &QPushButton::clicked, this, &Yamitracker::onStopClicked);
+    connect(refreshDevicesButton, &QPushButton::clicked, this, &Yamitracker::onRefreshDevicesClicked);
     
-    // Таймер для периодической проверки соединения
     connect(reconnectTimer, &QTimer::timeout, this, &Yamitracker::attemptReconnect);
-    reconnectTimer->start(5000); // Проверка каждые 5 секунд
+    reconnectTimer->start(5000);
 
     setStyleSheet(
         "QMainWindow { background-color: #2b2b2b; color: white; }"
@@ -104,7 +128,8 @@ Yamitracker::Yamitracker(QWidget *parent)
         "QProgressBar::chunk { background: #4CAF50; }"
     );
 
-    startSerialReader();
+    // Автоматическое обнаружение устройства при запуске
+    QTimer::singleShot(1000, this, &Yamitracker::autoDetectAndConnect);
     setWindowTitle("Yamaha PSR-E333 Monitor");
 }
 
@@ -118,7 +143,50 @@ Yamitracker::~Yamitracker()
         }
     }
     delete midiWriter;
+    delete yamiFile;
+    delete deviceDetector;
     delete ui;
+}
+
+void Yamitracker::initializeDeviceDetection()
+{
+    deviceLabel->setText("Устройство: Поиск...");
+    deviceLabel->setStyleSheet("color: orange;");
+}
+
+void Yamitracker::autoDetectAndConnect()
+{
+    MidiDeviceInfo yamahaDevice = deviceDetector->detectYamahaDevice();
+    
+    if (!yamahaDevice.port.isEmpty()) {
+        serialReader->setDevice(yamahaDevice.port);
+        deviceLabel->setText(QString("Устройство: %1 %2").arg(yamahaDevice.manufacturer, yamahaDevice.model));
+        deviceLabel->setStyleSheet("color: green;");
+        qDebug() << "Auto-detected device:" << yamahaDevice.name << "on port:" << yamahaDevice.port;
+    } else {
+        deviceLabel->setText("Устройство: Не найдено");
+        deviceLabel->setStyleSheet("color: red;");
+    }
+    
+    startSerialReader();
+}
+
+void Yamitracker::onDeviceInfoReceived(const QString &manufacturer, const QString &model)
+{
+    deviceLabel->setText(QString("Устройство: %1 %2").arg(manufacturer, model));
+    deviceLabel->setStyleSheet("color: green;");
+    
+    // Обновляем заголовок окна с информацией об устройстве
+    setWindowTitle(QString("Yamitracker - %1 %2").arg(manufacturer, model));
+}
+
+void Yamitracker::onRefreshDevicesClicked()
+{
+    deviceLabel->setText("Устройство: Обновление...");
+    deviceLabel->setStyleSheet("color: orange;");
+    
+    // Перезапускаем обнаружение
+    autoDetectAndConnect();
 }
 
 void Yamitracker::startSerialReader()
@@ -180,15 +248,22 @@ void Yamitracker::onNoteOnReceived(const QString &data, int velocity)
     int volume = (velocity * 100) / 127;
     ui->volumeBar->setValue(volume);
 
-    // Исправлены отступы
     if (midiWriter->isRecording()) {
         double currentTime = QDateTime::currentMSecsSinceEpoch() / 1000.0 - recordingStartTime;
         
-        // Конвертируем hex в decimal note number
         bool ok;
         int noteNumber = data.toInt(&ok, 16);
         if (ok) {
             midiWriter->addNoteOn(currentTime, 0, noteNumber, velocity);
+            
+            if (yamiFile->getTracks().empty()) {
+                yamiFile->addTrack(0);
+            }
+            
+            auto& track = yamiFile->getTracks()[0];
+            track.notes.emplace_back(noteNumber, currentTime, 0.0f, velocity);
+            
+            activeNotes[data] = &track.notes.back();
         }
     }
 }
@@ -216,7 +291,6 @@ void Yamitracker::onNoteOffReceived(const QString &data)
         ui->volumeBar->setValue(0);
     }
 
-    // Исправлены отступы
     if (midiWriter->isRecording()) {
         double currentTime = QDateTime::currentMSecsSinceEpoch() / 1000.0 - recordingStartTime;
         
@@ -224,6 +298,12 @@ void Yamitracker::onNoteOffReceived(const QString &data)
         int noteNumber = data.toInt(&ok, 16);
         if (ok) {
             midiWriter->addNoteOff(currentTime, 0, noteNumber);
+            
+            if (activeNotes.contains(data)) {
+                yami::Note* activeNote = activeNotes[data];
+                activeNote->duration = currentTime - activeNote->start_time;
+                activeNotes.remove(data);
+            }
         }
     }
 }
@@ -252,7 +332,6 @@ void Yamitracker::onError(const QString &message)
 {
     ui->statusLabel->setText("Ошибка: " + message);
     ui->statusLabel->setStyleSheet("color: orange;");
-    // Не показываем MessageBox для ошибок подключения, чтобы не раздражать пользователя
     if (!message.contains("reconnect", Qt::CaseInsensitive)) {
         QMessageBox::warning(this, "Ошибка", message);
     }
@@ -263,11 +342,17 @@ void Yamitracker::onPlayClicked()
     ui->statusLabel->setText("Воспроизведение...");
     ui->statusLabel->setStyleSheet("color: blue;");
     
-    // Начать запись MIDI
-    QString filename = "recording_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss") + ".mid";
-    if (midiWriter->startRecording(filename)) {
+    QString baseFilename = "recording_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
+    
+    yamiFile->clear();
+    yamiFile->addTrack(0);
+    yamiFile->setBPM(120.0f);
+    
+    activeNotes.clear();
+    
+    if (midiWriter->startRecording(baseFilename + ".mid")) {
         recordingStartTime = QDateTime::currentMSecsSinceEpoch() / 1000.0;
-        qDebug() << "Started recording to:" << filename;
+        qDebug() << "Started recording to:" << baseFilename;
     }
 }
 
@@ -282,12 +367,29 @@ void Yamitracker::onStopClicked()
     
     if (midiWriter->isRecording()) {
         midiWriter->stopRecording();
-        QString filename = "recording_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss") + ".mid";
-        if (midiWriter->saveToFile(filename)) {
-            qDebug() << "MIDI file saved:" << filename;
-            ui->statusLabel->setText("Сохранено: " + filename);
-        }
+        QString baseFilename = "recording_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
+        saveAllFormats(baseFilename);
     }
+}
+
+void Yamitracker::saveAllFormats(const QString &baseFilename)
+{
+    QString midiFilename = baseFilename + ".mid";
+    if (midiWriter->saveToFile(midiFilename)) {
+        qDebug() << "MIDI file saved:" << midiFilename;
+    }
+    
+    QString yamiTextFilename = baseFilename + ".yami";
+    if (yamiFile->saveToText(yamiTextFilename.toStdString())) {
+        qDebug() << "YAMI text file saved:" << yamiTextFilename;
+    }
+    
+    QString yamiBinaryFilename = baseFilename + ".yamb";
+    if (yamiFile->saveToBinary(yamiBinaryFilename.toStdString())) {
+        qDebug() << "YAMI binary file saved:" << yamiBinaryFilename;
+    }
+    
+    ui->statusLabel->setText(QString("Сохранено: %1 (MIDI, YAMI текстовый, YAMI бинарный)").arg(baseFilename));
 }
 
 void Yamitracker::highlightKey(const QString &note)

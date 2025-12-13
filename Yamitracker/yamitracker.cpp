@@ -1,4 +1,3 @@
-// yamitracker.cpp
 #include "yamitracker.h"
 #include "ui_yamitracker.h"
 
@@ -8,7 +7,7 @@
 #include <QMessageBox>
 #include <QTimer>
 #include <QDebug>
-#include <QDateTime>  // Добавьте этот include
+#include <QDateTime>
 
 void SerialReader::run()
 {
@@ -17,7 +16,6 @@ void SerialReader::run()
         if (fd < 0) {
             emit error("Cannot open /dev/dmmidi1");
             emit connectionStatusChanged(false);
-            // Ждем перед повторной попыткой
             sleep(2);
             continue;
         }
@@ -65,7 +63,7 @@ void SerialReader::run()
         
         if (!shouldStop) {
             emit error("Connection lost. Attempting to reconnect...");
-            sleep(2); // Ждем перед повторной попыткой подключения
+            sleep(2);
         }
     }
 }
@@ -89,9 +87,8 @@ Yamitracker::Yamitracker(QWidget *parent)
     connect(ui->playButton, &QPushButton::clicked, this, &Yamitracker::onPlayClicked);
     connect(ui->stopButton, &QPushButton::clicked, this, &Yamitracker::onStopClicked);
     
-    // Таймер для периодической проверки соединения
     connect(reconnectTimer, &QTimer::timeout, this, &Yamitracker::attemptReconnect);
-    reconnectTimer->start(5000); // Проверка каждые 5 секунд
+    reconnectTimer->start(5000);
 
     setStyleSheet(
         "QMainWindow { background-color: #2b2b2b; color: white; }"
@@ -181,11 +178,9 @@ void Yamitracker::onNoteOnReceived(const QString &data, int velocity)
     int volume = (velocity * 100) / 127;
     ui->volumeBar->setValue(volume);
 
-    // Исправлены отступы
     if (midiWriter->isRecording()) {
         double currentTime = QDateTime::currentMSecsSinceEpoch() / 1000.0 - recordingStartTime;
         
-        // Конвертируем hex в decimal note number
         bool ok;
         int noteNumber = data.toInt(&ok, 16);
         if (ok) {
@@ -217,7 +212,6 @@ void Yamitracker::onNoteOffReceived(const QString &data)
         ui->volumeBar->setValue(0);
     }
 
-    // Исправлены отступы
     if (midiWriter->isRecording()) {
         double currentTime = QDateTime::currentMSecsSinceEpoch() / 1000.0 - recordingStartTime;
         
@@ -253,7 +247,6 @@ void Yamitracker::onError(const QString &message)
 {
     ui->statusLabel->setText("Ошибка: " + message);
     ui->statusLabel->setStyleSheet("color: orange;");
-    // Не показываем MessageBox для ошибок подключения, чтобы не раздражать пользователя
     if (!message.contains("reconnect", Qt::CaseInsensitive)) {
         QMessageBox::warning(this, "Ошибка", message);
     }
@@ -264,7 +257,6 @@ void Yamitracker::onPlayClicked()
     ui->statusLabel->setText("Воспроизведение...");
     ui->statusLabel->setStyleSheet("color: blue;");
     
-    // Начать запись MIDI
     QString filename = "recording_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss") + ".mid";
     if (midiWriter->startRecording(filename)) {
         recordingStartTime = QDateTime::currentMSecsSinceEpoch() / 1000.0;
@@ -316,10 +308,8 @@ void Yamitracker::clearAllHighlights()
     }
 }
 
-// Добавьте реализацию отсутствующего метода
 void Yamitracker::clearStatusMessage()
 {
-    // Реализация по вашему усмотрению
     ui->statusLabel->setText("Статус: Готов");
     ui->statusLabel->setStyleSheet("color: white;");
 }

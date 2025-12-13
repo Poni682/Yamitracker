@@ -1,4 +1,3 @@
-// yamitracker.h
 #ifndef YAMITRACKER_H
 #define YAMITRACKER_H
 
@@ -9,7 +8,10 @@
 #include <QTimer>
 #include <QHash>
 #include <QDateTime>
+#include <QLabel>
 #include "simplemidiwriter.h"
+#include "yamimedia.h"
+#include "mididevicedetector.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Yamitracker; }
@@ -22,11 +24,20 @@ public:
     explicit SerialReader(QObject *parent = nullptr) : QThread(parent) 
     {
         shouldStop = false;
+        currentDevice = "/dev/dmmidi1";
     }
     
     void stop() 
     {
         shouldStop = true;
+    }
+    
+    void setDevice(const QString& device) {
+        currentDevice = device;
+    }
+    
+    QString getCurrentDevice() const {
+        return currentDevice;
     }
 
 protected:
@@ -34,15 +45,17 @@ protected:
 
 private:
     bool shouldStop;
+    QString currentDevice;
 
 signals:
     void noteOnReceived(const QString &note, int velocity);
     void noteOffReceived(const QString &note);
     void error(const QString &message);
     void connectionStatusChanged(bool connected);
+    void deviceInfoReceived(const QString &manufacturer, const QString &model);
 };
 
-class Yamitracker : public QMainWindow  // Убрали неправильное наследование
+class Yamitracker : public QMainWindow
 {
     Q_OBJECT
 
@@ -59,6 +72,8 @@ private slots:
     void clearStatusMessage();
     void onConnectionStatusChanged(bool connected);
     void attemptReconnect();
+    void onDeviceInfoReceived(const QString &manufacturer, const QString &model);
+    void onRefreshDevicesClicked();
 
 private:
     Ui::Yamitracker *ui;
@@ -68,13 +83,21 @@ private:
     QTimer *reconnectTimer;
     bool isConnected;
     SimpleMidiWriter *midiWriter;
+    yami::YamiFile *yamiFile;
     double recordingStartTime;
+    QHash<QString, yami::Note*> activeNotes;
+    MidiDeviceDetector *deviceDetector;
+    QLabel *deviceLabel;
+    QPushButton *refreshDevicesButton;
 
     void initializeKeyButtons();
     void highlightKey(const QString &note);
     void clearKey(const QString &note);
     void clearAllHighlights();
     void startSerialReader();
+    void saveAllFormats(const QString &baseFilename);
+    void initializeDeviceDetection();
+    void autoDetectAndConnect();
 };
 
-#endif // YAMITRACKER_H
+#endif

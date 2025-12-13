@@ -1,4 +1,3 @@
-// simplemidiwriter.cpp
 #include "simplemidiwriter.h"
 #include <QDateTime>
 #include <QDebug>
@@ -49,10 +48,8 @@ bool SimpleMidiWriter::saveToFile(const QString &filename)
     QDataStream stream(&file);
     stream.setByteOrder(QDataStream::BigEndian);
     
-    // Записываем заголовок MIDI файла
     writeMidiHeader(stream);
     
-    // Записываем трек с событиями
     writeMidiTrack(stream);
     
     file.close();
@@ -66,7 +63,7 @@ void SimpleMidiWriter::addNoteOn(double time, int channel, int note, int velocit
     
     MidiEvent event;
     event.time = time;
-    event.type = 0x90; // Note On
+    event.type = 0x90;
     event.channel = channel;
     event.note = note;
     event.velocity = velocity;
@@ -80,7 +77,7 @@ void SimpleMidiWriter::addNoteOff(double time, int channel, int note)
     
     MidiEvent event;
     event.time = time;
-    event.type = 0x80; // Note Off
+    event.type = 0x80;
     event.channel = channel;
     event.note = note;
     event.velocity = 0;
@@ -116,45 +113,37 @@ void SimpleMidiWriter::writeVariableLength(QDataStream &stream, quint32 value)
 
 void SimpleMidiWriter::writeMidiHeader(QDataStream &stream)
 {
-    // MIDI header chunk
-    stream.writeRawData("MThd", 4);        // Chunk type
-    stream << (quint32)6;                  // Chunk length
-    stream << (quint16)1;                  // Format type (single track)
-    stream << (quint16)1;                  // Number of tracks
-    stream << (quint16)480;                // Ticks per quarter note
+    stream.writeRawData("MThd", 4);
+    stream << (quint32)6;
+    stream << (quint16)1;
+    stream << (quint16)1;
+    stream << (quint16)480;
 }
 
 void SimpleMidiWriter::writeMidiTrack(QDataStream &stream)
 {
-    // Временный буфер для расчета длины трека
     QByteArray trackData;
     QDataStream trackStream(&trackData, QIODevice::WriteOnly);
     trackStream.setByteOrder(QDataStream::BigEndian);
     
     double lastTime = 0;
     
-    // Добавляем события в трек
     for (const MidiEvent &event : m_events) {
-        // Вычисляем дельту времени в тиках
-        quint32 deltaTime = (event.time - lastTime) * 480; // 480 тиков в секунду
+        quint32 deltaTime = (event.time - lastTime) * 480; 
         lastTime = event.time;
         
-        // Записываем дельту времени
         writeVariableLength(trackStream, deltaTime);
         
-        // Записываем MIDI событие
         quint8 statusByte = event.type | (event.channel & 0x0F);
         trackStream << statusByte;
         trackStream << (quint8)event.note;
         trackStream << (quint8)event.velocity;
     }
     
-    // Добавляем конец трека
-    writeVariableLength(trackStream, 0); // delta time
-    trackStream.writeRawData("\xFF\x2F\x00", 3); // end of track
+    writeVariableLength(trackStream, 0);
+    trackStream.writeRawData("\xFF\x2F\x00", 3);
     
-    // Записываем заголовок трека
-    stream.writeRawData("MTrk", 4); // Chunk type
-    stream << (quint32)trackData.size(); // Chunk length
-    stream.writeRawData(trackData.constData(), trackData.size()); // Track data
-}
+    stream.writeRawData("MTrk", 4); 
+    stream << (quint32)trackData.size();
+    stream.writeRawData(trackData.constData(), trackData.size());
+}       

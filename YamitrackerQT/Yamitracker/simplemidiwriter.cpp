@@ -50,7 +50,6 @@ bool SimpleMidiWriter::saveToFile(const QString &filename)
     
     writeMidiHeader(stream);
     
-    // Записываем трек с событиями
     writeMidiTrack(stream);
     
     file.close();
@@ -64,7 +63,7 @@ void SimpleMidiWriter::addNoteOn(double time, int channel, int note, int velocit
     
     MidiEvent event;
     event.time = time;
-    event.type = 0x90; // Note On
+    event.type = 0x90;
     event.channel = channel;
     event.note = note;
     event.velocity = velocity;

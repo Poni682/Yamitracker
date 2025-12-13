@@ -40,4 +40,4 @@ private:
     void writeMidiTrack(QDataStream &stream);
 };
 
-#endif // SIMPLEMIDIWRITER_H
+#endif
