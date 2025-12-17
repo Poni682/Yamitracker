@@ -136,6 +136,8 @@ Yamitracker::Yamitracker(QWidget *parent)
     , isPlayingBack(false)
     , currentPlaybackTrack(-1)
     , currentTrack(0)
+    , globalRecordingStartTime(0)
+    , isGlobalRecording(false)
 {
     ui->setupUi(this);
     
@@ -166,9 +168,17 @@ Yamitracker::Yamitracker(QWidget *parent)
         bassVolumeSlider->setTickPosition(QSlider::TicksBelow);
     }
     
-    // Инициализируем дорожки
+    // Инициализируем дорожки и время записи по дорожкам
     initializeTracks();
     initializeTrackControls();
+    
+    // Инициализируем векторы времени записи по дорожкам
+    trackRecordingStartTimes.resize(SimpleWavWriter::MAX_TRACKS);
+    trackIsRecording.resize(SimpleWavWriter::MAX_TRACKS);
+    for (int i = 0; i < SimpleWavWriter::MAX_TRACKS; i++) {
+        trackRecordingStartTimes[i] = 0;
+        trackIsRecording[i] = false;
+    }
     
     // Обновляем метки
     updateSpeedLabel();
@@ -496,6 +506,15 @@ void Yamitracker::updateTrackInfo()
 void Yamitracker::onCurrentTrackChanged(int index)
 {
     currentTrack = trackComboBox->itemData(index).toInt();
+    
+    // Если мы переключаемся на другую дорожку во время записи,
+    // останавливаем запись на текущей дорожке
+    if (trackIsRecording[currentTrack] && wavWriter->isRecording()) {
+        wavWriter->stopRecording();
+        trackIsRecording[currentTrack] = false;
+        ui->statusLabel->setText(QString("Переключение на дорожку %1").arg(currentTrack + 1));
+    }
+    
     updateTrackInfo();
 }
 
@@ -583,6 +602,10 @@ void Yamitracker::onAddTrackClicked()
     QString newName = QString("Дорожка %1").arg(newTrack + 1);
     wavWriter->setTrackName(newTrack, newName);
     
+    // Сбрасываем время записи для новой дорожки
+    trackRecordingStartTimes[newTrack] = 0;
+    trackIsRecording[newTrack] = false;
+    
     // Переключаемся на новую дорожку
     trackComboBox->setCurrentIndex(newTrack);
     currentTrack = newTrack;
@@ -607,6 +630,10 @@ void Yamitracker::onRemoveTrackClicked()
     
     if (reply == QMessageBox::Yes) {
         wavWriter->clearTrack(currentTrack);
+        // Сбрасываем время записи для этой дорожки
+        trackRecordingStartTimes[currentTrack] = 0;
+        trackIsRecording[currentTrack] = false;
+        
         ui->statusLabel->setText(QString("Дорожка %1 очищена").arg(currentTrack + 1));
         updateTrackInfo();
         updateTrackControls();
@@ -621,6 +648,10 @@ void Yamitracker::onClearTrackClicked()
     }
     
     wavWriter->clearTrack(currentTrack);
+    // Сбрасываем время записи для этой дорожки
+    trackRecordingStartTimes[currentTrack] = 0;
+    trackIsRecording[currentTrack] = false;
+    
     ui->statusLabel->setText(QString("Дорожка %1 очищена").arg(currentTrack + 1));
     updateTrackInfo();
     updateTrackControls();
@@ -701,23 +732,9 @@ void Yamitracker::playAllTracks()
         stopPlayback();
     }
     
-    // Получаем выбранные дорожки для воспроизведения
-    QVector<int> selectedTracks;
-    for (int i = 0; i < SimpleWavWriter::MAX_TRACKS; i++) {
-        QCheckBox* checkBox = findChild<QCheckBox*>(QString("trackSelectCheck_%1").arg(i));
-        if (checkBox && checkBox->isChecked() && !wavWriter->isTrackMuted(i)) {
-            selectedTracks.append(i);
-        }
-    }
-    
-    if (selectedTracks.isEmpty()) {
-        ui->statusLabel->setText("Нет выбранных дорожек для воспроизведения");
-        return;
-    }
-    
-    // Смешиваем выбранные дорожки
-    QByteArray mixedData = mixSelectedTracks(selectedTracks);
-    if (mixedData.isEmpty()) {
+    // Получаем аудиоданные всех дорожек (уже микшированные)
+    QByteArray audioData = wavWriter->getAllTracksAudioData();
+    if (audioData.isEmpty()) {
         ui->statusLabel->setText("Нет данных для воспроизведения");
         return;
     }
@@ -747,7 +764,7 @@ void Yamitracker::playAllTracks()
     audioOutput = new QAudioOutput(format, this);
     
     // Конвертируем моно в стерео для лучшего качества
-    QByteArray stereoData = convertMonoToStereo(mixedData);
+    QByteArray stereoData = convertMonoToStereo(audioData);
     audioBuffer = new QBuffer(this);
     audioBuffer->setData(stereoData);
     audioBuffer->open(QIODevice::ReadOnly);
@@ -757,12 +774,15 @@ void Yamitracker::playAllTracks()
     currentPlaybackTrack = -1; // Все дорожки
     isPlayingBack = true;
     
-    QString trackList;
-    for (int track : selectedTracks) {
-        if (!trackList.isEmpty()) trackList += ", ";
-        trackList += QString::number(track + 1);
+    // Получаем количество активных дорожек
+    int activeTracks = 0;
+    for (int i = 0; i < SimpleWavWriter::MAX_TRACKS; i++) {
+        if (!wavWriter->isTrackMuted(i) && wavWriter->getEventCount(i) > 0) {
+            activeTracks++;
+        }
     }
-    ui->statusLabel->setText(QString("Воспроизведение дорожек %1...").arg(trackList));
+    
+    ui->statusLabel->setText(QString("Воспроизведение всех дорожек (%1 активных)...").arg(activeTracks));
     
     audioOutput->start(audioBuffer);
     
@@ -874,11 +894,16 @@ void Yamitracker::onCopyTrackClicked()
 {
     bool ok;
     int targetTrack = QInputDialog::getInt(this, "Копирование дорожки", 
-                                          "Введите номер целевой дорожки (1-16):", 
-                                          currentTrack + 1, 1, 16, 1, &ok);
+                                          "Введите номер целевой дорожки (1-7):", 
+                                          currentTrack + 1, 1, 7, 1, &ok);
     
     if (ok && targetTrack - 1 != currentTrack) {
         wavWriter->copyTrack(currentTrack, targetTrack - 1);
+        
+        // Копируем состояние времени записи
+        trackRecordingStartTimes[targetTrack - 1] = trackRecordingStartTimes[currentTrack];
+        trackIsRecording[targetTrack - 1] = trackIsRecording[currentTrack];
+        
         ui->statusLabel->setText(QString("Дорожка %1 скопирована в дорожку %2")
                                   .arg(currentTrack + 1).arg(targetTrack));
         updateTrackInfo();
@@ -890,8 +915,8 @@ void Yamitracker::onMergeTracksClicked()
 {
     bool ok;
     int targetTrack = QInputDialog::getInt(this, "Объединение дорожек", 
-                                          "Введите номер дорожки для объединения (1-16):", 
-                                          currentTrack + 1, 1, 16, 1, &ok);
+                                          "Введите номер дорожки для объединения (1-7):", 
+                                          currentTrack + 1, 1, 7, 1, &ok);
     
     if (ok && targetTrack - 1 != currentTrack) {
         wavWriter->mergeTrack(currentTrack, targetTrack - 1);
@@ -1035,15 +1060,16 @@ void Yamitracker::onNoteOnReceived(const QString &data, int velocity)
     int volume = (velocity * 100) / 127;
     ui->volumeBar->setValue(volume);
 
-    if (wavWriter->isRecording()) {
-        double currentTime = QDateTime::currentMSecsSinceEpoch() / 1000.0 - recordingStartTime;
+    // Записываем ноту, если идет запись на текущей дорожке
+    if (trackIsRecording[currentTrack]) {
+        double currentTime = QDateTime::currentMSecsSinceEpoch() / 1000.0 - trackRecordingStartTimes[currentTrack];
         
         bool ok;
         int noteNumber = data.toInt(&ok, 16);
         if (ok) {
             noteStartTimes[data] = currentTime;
             
-            // Записываем начало ноты в текущую дорожку
+            // Записываем начало ноты в текущую дорожку с относительным временем
             int currentInstrument = instrumentComboBox->currentData().toInt();
             wavWriter->addNote(currentTrack, currentTime, noteNumber, velocity, 0.1, currentInstrument);
             
@@ -1077,8 +1103,8 @@ void Yamitracker::onNoteOffReceived(const QString &data)
         ui->volumeBar->setValue(0);
     }
 
-    if (wavWriter->isRecording() && noteStartTimes.contains(data)) {
-        double currentTime = QDateTime::currentMSecsSinceEpoch() / 1000.0 - recordingStartTime;
+    if (trackIsRecording[currentTrack] && noteStartTimes.contains(data)) {
+        double currentTime = QDateTime::currentMSecsSinceEpoch() / 1000.0 - trackRecordingStartTimes[currentTrack];
         
         bool ok;
         int noteNumber = data.toInt(&ok, 16);
@@ -1149,10 +1175,21 @@ void Yamitracker::onPlayClicked()
     currentlyPressedKeys.clear();
     clearAllHighlights();
     
+    // Если дорожка уже записывается, останавливаем запись
+    if (trackIsRecording[currentTrack]) {
+        wavWriter->stopRecording();
+        trackIsRecording[currentTrack] = false;
+    }
+    
+    // Сбрасываем время записи для текущей дорожки и начинаем новую запись
+    trackRecordingStartTimes[currentTrack] = QDateTime::currentMSecsSinceEpoch() / 1000.0;
+    
     // Начинаем запись с высоким качеством
     if (wavWriter->startRecording(44100)) {
-        recordingStartTime = QDateTime::currentMSecsSinceEpoch() / 1000.0;
-        qDebug() << "Started WAV recording from synthesizer, track:" << currentTrack 
+        trackIsRecording[currentTrack] = true;
+        recordingStartTime = trackRecordingStartTimes[currentTrack];
+        qDebug() << "Started WAV recording on track:" << currentTrack 
+                 << "with start time:" << trackRecordingStartTimes[currentTrack]
                  << "sample rate: 44100, instrument:" << currentInstrument;
         if (isBassInstrument) {
             qDebug() << "Bass instrument detected - volume will be increased";
@@ -1165,7 +1202,7 @@ void Yamitracker::onPlayClicked()
 
 void Yamitracker::onPauseClicked()
 {
-    if (wavWriter->isRecording()) {
+    if (trackIsRecording[currentTrack] && wavWriter->isRecording()) {
         if (wavWriter->isPaused()) {
             wavWriter->resumeRecording();
             ui->statusLabel->setText("Запись возобновлена...");
@@ -1187,15 +1224,26 @@ void Yamitracker::onStopClicked()
     ui->keysInfoLabel->setText("Нажато клавиш: 0");
     ui->volumeBar->setValue(0);
     
-    if (wavWriter->isRecording()) {
+    if (trackIsRecording[currentTrack] && wavWriter->isRecording()) {
         wavWriter->stopRecording();
+        trackIsRecording[currentTrack] = false;
         
         // Деактивируем кнопку паузы
         ui->pauseButton->setEnabled(false);
         ui->pauseButton->setText("⏸ Пауза");
         
-        // Предлагаем сохранить запись
-        onSaveRecordingClicked();
+        // Предлагаем сохранить запись, если это последняя дорожка
+        bool hasMoreTracks = false;
+        for (int i = 0; i < SimpleWavWriter::MAX_TRACKS; i++) {
+            if (i != currentTrack && wavWriter->getEventCount(i) == 0) {
+                hasMoreTracks = true;
+                break;
+            }
+        }
+        
+        if (!hasMoreTracks) {
+            onSaveRecordingClicked();
+        }
     }
     
     noteStartTimes.clear();
@@ -1238,7 +1286,7 @@ void Yamitracker::saveWavFile(const QString &filename)
                              "Файл: %1\n"
                              "Размер: %2 байт\n"
                              "Формат: 44100 Гц, 16 бит, моно\n"
-                             "Содержит все активные дорожки (микшированные)")
+                             "Все дорожки микшированы для параллельного воспроизведения")
                        .arg(filename)
                        .arg(fileInfo.size());
         QMessageBox::information(this, "Файл сохранен", info);
@@ -1481,8 +1529,8 @@ void Yamitracker::onPlayMidiFileClicked()
 
 void Yamitracker::simulateNote(int note, int velocity, double duration)
 {
-    if (wavWriter->isRecording()) {
-        double currentTime = QDateTime::currentMSecsSinceEpoch() / 1000.0 - recordingStartTime;
+    if (trackIsRecording[currentTrack]) {
+        double currentTime = QDateTime::currentMSecsSinceEpoch() / 1000.0 - trackRecordingStartTimes[currentTrack];
         wavWriter->addNote(currentTrack, currentTime, note, velocity, duration);
     }
 }
@@ -1513,18 +1561,33 @@ void Yamitracker::onRecordFromMidiFile()
         ui->statusLabel->setText(QString("Запись из MIDI файла [Инструмент: %1]...").arg(getInstrumentName(currentInstrument)));
     }
     
+    // Сбрасываем время записи для текущей дорожки
+    trackRecordingStartTimes[currentTrack] = QDateTime::currentMSecsSinceEpoch() / 1000.0;
+    
     // Начинаем запись с высоким качеством
     if (wavWriter->startRecording(44100)) {
-        recordingStartTime = QDateTime::currentMSecsSinceEpoch() / 1000.0;
+        trackIsRecording[currentTrack] = true;
+        recordingStartTime = trackRecordingStartTimes[currentTrack];
         qDebug() << "Started WAV recording from MIDI file, instrument:" << currentInstrument << "track:" << currentTrack;
         
         // Генерируем мелодию в зависимости от инструмента
         generateInstrumentMelody(currentInstrument);
         
         wavWriter->stopRecording();
+        trackIsRecording[currentTrack] = false;
         
-        // Предлагаем сохранить
-        onSaveRecordingClicked();
+        // Предлагаем сохранить, если это последняя дорожка
+        bool hasMoreTracks = false;
+        for (int i = 0; i < SimpleWavWriter::MAX_TRACKS; i++) {
+            if (i != currentTrack && wavWriter->getEventCount(i) == 0) {
+                hasMoreTracks = true;
+                break;
+            }
+        }
+        
+        if (!hasMoreTracks) {
+            onSaveRecordingClicked();
+        }
     }
 }
 
@@ -1532,81 +1595,84 @@ void Yamitracker::generateInstrumentMelody(int instrument)
 {
     double volumeMultiplier = bassInstruments.contains(instrument) ? bassVolumeMultiplier : 1.0;
     
+    // Время относительно начала записи на текущей дорожке
+    double currentTrackTime = QDateTime::currentMSecsSinceEpoch() / 1000.0 - trackRecordingStartTimes[currentTrack];
+    
     // Разные мелодии для разных инструментов
     switch (instrument) {
     case 1: // CrandPno (Гранд-пианино)
-        wavWriter->addNote(currentTrack, 0.0, 60, 100 * volumeMultiplier, 1.0, instrument); // C4
-        wavWriter->addNote(currentTrack, 0.5, 64, 80 * volumeMultiplier, 0.5, instrument);  // E4
-        wavWriter->addNote(currentTrack, 1.0, 67, 90 * volumeMultiplier, 1.0, instrument);  // G4
-        wavWriter->addNote(currentTrack, 2.0, 72, 100 * volumeMultiplier, 1.0, instrument); // C5
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.0, 60, 100 * volumeMultiplier, 1.0, instrument); // C4
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.5, 64, 80 * volumeMultiplier, 0.5, instrument);  // E4
+        wavWriter->addNote(currentTrack, currentTrackTime + 1.0, 67, 90 * volumeMultiplier, 1.0, instrument);  // G4
+        wavWriter->addNote(currentTrack, currentTrackTime + 2.0, 72, 100 * volumeMultiplier, 1.0, instrument); // C5
         break;
         
     case 2: // BritePno (Яркое пианино)
-        wavWriter->addNote(currentTrack, 0.0, 60, 100 * volumeMultiplier, 0.3, instrument); // C4
-        wavWriter->addNote(currentTrack, 0.1, 64, 90 * volumeMultiplier, 0.3, instrument);  // E4
-        wavWriter->addNote(currentTrack, 0.2, 67, 80 * volumeMultiplier, 0.3, instrument);  // G4
-        wavWriter->addNote(currentTrack, 0.3, 72, 100 * volumeMultiplier, 0.5, instrument); // C5
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.0, 60, 100 * volumeMultiplier, 0.3, instrument); // C4
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.1, 64, 90 * volumeMultiplier, 0.3, instrument);  // E4
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.2, 67, 80 * volumeMultiplier, 0.3, instrument);  // G4
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.3, 72, 100 * volumeMultiplier, 0.5, instrument); // C5
         break;
         
     case 3: // Harpsi (Клавесин)
     case 6:
-        wavWriter->addNote(currentTrack, 0.0, 60, 100 * volumeMultiplier, 0.1, instrument); // C4
-        wavWriter->addNote(currentTrack, 0.1, 62, 90 * volumeMultiplier, 0.1, instrument);  // D4
-        wavWriter->addNote(currentTrack, 0.2, 64, 100 * volumeMultiplier, 0.1, instrument); // E4
-        wavWriter->addNote(currentTrack, 0.3, 65, 90 * volumeMultiplier, 0.1, instrument);  // F4
-        wavWriter->addNote(currentTrack, 0.4, 67, 100 * volumeMultiplier, 0.2, instrument); // G4
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.0, 60, 100 * volumeMultiplier, 0.1, instrument); // C4
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.1, 62, 90 * volumeMultiplier, 0.1, instrument);  // D4
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.2, 64, 100 * volumeMultiplier, 0.1, instrument); // E4
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.3, 65, 90 * volumeMultiplier, 0.1, instrument);  // F4
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.4, 67, 100 * volumeMultiplier, 0.2, instrument); // G4
         break;
         
     case 28: // FngrBass (Фингер-бас)
     case 33:
     case 39:
-        wavWriter->addNote(currentTrack, 0.0, 36, 120 * volumeMultiplier, 1.0, instrument); // C2 (бас)
-        wavWriter->addNote(currentTrack, 1.0, 40, 100 * volumeMultiplier, 0.5, instrument); // E2
-        wavWriter->addNote(currentTrack, 1.5, 43, 110 * volumeMultiplier, 1.0, instrument); // G2
-        wavWriter->addNote(currentTrack, 2.5, 48, 100 * volumeMultiplier, 0.5, instrument); // C3
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.0, 36, 120 * volumeMultiplier, 1.0, instrument); // C2 (бас)
+        wavWriter->addNote(currentTrack, currentTrackTime + 1.0, 40, 100 * volumeMultiplier, 0.5, instrument); // E2
+        wavWriter->addNote(currentTrack, currentTrackTime + 1.5, 43, 110 * volumeMultiplier, 1.0, instrument); // G2
+        wavWriter->addNote(currentTrack, currentTrackTime + 2.5, 48, 100 * volumeMultiplier, 0.5, instrument); // C3
         break;
         
     case 40: // SlapBas (Слэп-бас)
-        wavWriter->addNote(currentTrack, 0.0, 36, 150 * volumeMultiplier, 0.2, instrument); // C2 (щелчок)
-        wavWriter->addNote(currentTrack, 0.3, 40, 120 * volumeMultiplier, 0.3, instrument); // E2 (пул)
-        wavWriter->addNote(currentTrack, 0.7, 43, 140 * volumeMultiplier, 0.2, instrument); // G2 (щелчок)
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.0, 36, 150 * volumeMultiplier, 0.2, instrument); // C2 (щелчок)
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.3, 40, 120 * volumeMultiplier, 0.3, instrument); // E2 (пул)
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.7, 43, 140 * volumeMultiplier, 0.2, instrument); // G2 (щелчок)
         break;
         
     case 29: // Ovrdrive (Овердрайв-гитара)
     case 37:
-        wavWriter->addNote(currentTrack, 0.0, 40, 100 * volumeMultiplier, 1.5, instrument); // E2
-        wavWriter->addNote(currentTrack, 0.5, 43, 90 * volumeMultiplier, 1.0, instrument);  // G2
-        wavWriter->addNote(currentTrack, 1.0, 45, 100 * volumeMultiplier, 0.5, instrument); // A2
-        wavWriter->addNote(currentTrack, 1.5, 47, 110 * volumeMultiplier, 1.0, instrument); // B2
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.0, 40, 100 * volumeMultiplier, 1.5, instrument); // E2
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.5, 43, 90 * volumeMultiplier, 1.0, instrument);  // G2
+        wavWriter->addNote(currentTrack, currentTrackTime + 1.0, 45, 100 * volumeMultiplier, 0.5, instrument); // A2
+        wavWriter->addNote(currentTrack, currentTrackTime + 1.5, 47, 110 * volumeMultiplier, 1.0, instrument); // B2
         break;
         
     case 48: // String (Струнные)
     case 49: // SlowStr (Медленные струнные)
-        wavWriter->addNote(currentTrack, 0.0, 60, 80 * volumeMultiplier, 2.0, instrument);  // C4
-        wavWriter->addNote(currentTrack, 0.5, 64, 70 * volumeMultiplier, 1.5, instrument);  // E4
-        wavWriter->addNote(currentTrack, 1.0, 67, 75 * volumeMultiplier, 2.0, instrument);  // G4
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.0, 60, 80 * volumeMultiplier, 2.0, instrument);  // C4
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.5, 64, 70 * volumeMultiplier, 1.5, instrument);  // E4
+        wavWriter->addNote(currentTrack, currentTrackTime + 1.0, 67, 75 * volumeMultiplier, 2.0, instrument);  // G4
         break;
         
     case 81: // LeadSx (Саксофон)
-        wavWriter->addNote(currentTrack, 0.0, 65, 90 * volumeMultiplier, 1.5, instrument);  // F4
-        wavWriter->addNote(currentTrack, 0.3, 67, 85 * volumeMultiplier, 0.5, instrument);  // G4
-        wavWriter->addNote(currentTrack, 0.8, 69, 95 * volumeMultiplier, 2.0, instrument);  // A4
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.0, 65, 90 * volumeMultiplier, 1.5, instrument);  // F4
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.3, 67, 85 * volumeMultiplier, 0.5, instrument);  // G4
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.8, 69, 95 * volumeMultiplier, 2.0, instrument);  // A4
         break;
         
     case 95: // Bright (Яркий звук)
     case 96:
     case 100:
-        wavWriter->addNote(currentTrack, 0.0, 72, 100 * volumeMultiplier, 0.2, instrument); // C5
-        wavWriter->addNote(currentTrack, 0.2, 76, 90 * volumeMultiplier, 0.2, instrument);  // E5
-        wavWriter->addNote(currentTrack, 0.4, 79, 100 * volumeMultiplier, 0.2, instrument); // G5
-        wavWriter->addNote(currentTrack, 0.6, 84, 110 * volumeMultiplier, 0.3, instrument); // C6
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.0, 72, 100 * volumeMultiplier, 0.2, instrument); // C5
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.2, 76, 90 * volumeMultiplier, 0.2, instrument);  // E5
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.4, 79, 100 * volumeMultiplier, 0.2, instrument); // G5
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.6, 84, 110 * volumeMultiplier, 0.3, instrument); // C6
         break;
         
     default:
         // Стандартная мелодия для неизвестных инструментов
-        wavWriter->addNote(currentTrack, 0.0, 60, 100 * volumeMultiplier, 1.0, instrument); // C4
-        wavWriter->addNote(currentTrack, 1.0, 64, 80 * volumeMultiplier, 1.0, instrument);  // E4
-        wavWriter->addNote(currentTrack, 2.0, 67, 90 * volumeMultiplier, 1.0, instrument);  // G4
+        wavWriter->addNote(currentTrack, currentTrackTime + 0.0, 60, 100 * volumeMultiplier, 1.0, instrument); // C4
+        wavWriter->addNote(currentTrack, currentTrackTime + 1.0, 64, 80 * volumeMultiplier, 1.0, instrument);  // E4
+        wavWriter->addNote(currentTrack, currentTrackTime + 2.0, 67, 90 * volumeMultiplier, 1.0, instrument);  // G4
         break;
     }
 }
@@ -1676,23 +1742,6 @@ void Yamitracker::startSerialReader()
         serialReader->start();
     }
 }
-
-// void Yamitracker::convertToBrr(const QString &wavFile, const QString &brrFile)
-// {
-//     // Реализация через brrConverter
-//     if (brrConverter->convertWavToBrr(wavFile, brrFile)) {
-//         ui->statusLabel->setText(QString("Конвертация завершена: %1").arg(brrFile));
-//     } else {
-//         ui->statusLabel->setText("Ошибка конвертации");
-//     }
-// }
-
-// Метод onAudioOutputNotify - если он не используется, можно его удалить или оставить пустым
-// void Yamitracker::onAudioOutputNotify()
-// {
-//     // Этот метод может быть пустым, если не используется
-//     // Он был добавлен в сигналы, но может не иметь реализации
-// }
 
 Yamitracker::~Yamitracker()
 {

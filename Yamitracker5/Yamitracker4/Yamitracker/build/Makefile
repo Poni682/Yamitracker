@@ -382,6 +382,7 @@ moc_yamitracker.cpp: ../yamitracker.h \
 	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/sofft328/progs/Yamitracker/Yamitracker5/Yamitracker4/Yamitracker/build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/sofft328/progs/Yamitracker/Yamitracker5/Yamitracker4/Yamitracker -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtMultimedia -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../yamitracker.h -o moc_yamitracker.cpp
 
 moc_simplewavwriter.cpp: ../simplewavwriter.h \
+		../brrconverter.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
 	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/sofft328/progs/Yamitracker/Yamitracker5/Yamitracker4/Yamitracker/build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/sofft328/progs/Yamitracker/Yamitracker5/Yamitracker4/Yamitracker -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtMultimedia -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../simplewavwriter.h -o moc_simplewavwriter.cpp
@@ -423,7 +424,8 @@ yamitracker.o: ../yamitracker.cpp ../yamitracker.h \
 		ui_yamitracker.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o yamitracker.o ../yamitracker.cpp
 
-simplewavwriter.o: ../simplewavwriter.cpp ../simplewavwriter.h
+simplewavwriter.o: ../simplewavwriter.cpp ../simplewavwriter.h \
+		../brrconverter.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o simplewavwriter.o ../simplewavwriter.cpp
 
 brrconverter.o: ../brrconverter.cpp ../brrconverter.h

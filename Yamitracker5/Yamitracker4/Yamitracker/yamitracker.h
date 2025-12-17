@@ -157,6 +157,10 @@ private:
     QVector<QPushButton*> trackMuteButtons;
     QVector<QPushButton*> trackSoloButtons;
     
+    // ВРЕМЯ ЗАПИСИ ПО ДОРОЖКАМ (ИСПРАВЛЕНО)
+    QVector<double> trackRecordingStartTimes;
+    QVector<bool> trackIsRecording;
+    
     // Вспомогательные методы
     void initializeTracks();
     void initializeTrackControls();
@@ -200,6 +204,10 @@ private:
         {48, "String"}, {49, "SlowStr"}, {81, "LeadSx"},
         {95, "Bright"}, {96, "Bright2"}, {100, "Bright3"}
     };
+    
+    // Флаг для отслеживания относительного времени записи
+    double globalRecordingStartTime;
+    bool isGlobalRecording;
 };
 
 #endif // YAMITRACKER_H

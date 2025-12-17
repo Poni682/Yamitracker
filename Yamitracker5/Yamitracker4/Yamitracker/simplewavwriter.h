@@ -123,6 +123,14 @@ private:
     QString noteToPentlyNote(int note) const;
     QString durationToPentlyDuration(double duration) const;
     QString instrumentToPentlyInstrument(int instrument) const;
+    
+    // НОВЫЕ МЕТОДЫ для конвертации в Pently формат
+    int secondsToPentlyTicks(double seconds) const;
+    QString ticksToDelayString(int ticks) const;
+    QVector<QString> splitLongDelay(int ticks) const; // НОВЫЙ МЕТОД для разбивки длинных задержек
+    QString generatePattern(int trackIndex) const;
+    int calculateTotalRows() const; // НОВЫЙ МЕТОД для вычисления длительности
+    
 };
 
 #endif // SIMPLEWAVWRITER_H
