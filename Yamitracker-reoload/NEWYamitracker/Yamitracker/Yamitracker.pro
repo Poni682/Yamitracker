@@ -8,26 +8,30 @@ INCLUDEPATH += src
 INCLUDEPATH += converter
 INCLUDEPATH += format/midi
 INCLUDEPATH += detected
+INCLUDEPATH += style/qcss
+INCLUDEPATH += style/qt
+INCLUDEPATH += src/groupButton
+INCLUDEPATH += ui
 
 LIBS += -lrtmidi -lasound
 
 CONFIG += c++17
 
 SOURCES += \
-    converter/csvrecorder.cpp \
     detected/detecteddevaice.cpp \
     main.cpp \
-    format/midi/midireader.cpp \
-    format/midi/midirecorder.cpp \
-    src/yamitracker.cpp
+    src/groupButton/buttonGroupY.cpp \
+    src/yamitracker.cpp \
+    style/qt/styleButton.cpp
 
 HEADERS += \
-    converter/csvrecorder.h \
     detected/detecteddevaice.h \
-    format/midi/MidiEvent.h \
-    format/midi/midireader.h \
-    format/midi/midirecorder.h \
-    src/yamitracker.h
+    format/midi/Midi.h \
+    format/midi/midiEventList.h \
+    src/groupButton/buttonGroupY.h \
+    src/yamitracker.h \
+    style/qcss/styleListButton.h \
+    style/qt/styleButton.h
 
 FORMS += \
     ui/yamitracker.ui

@@ -1,51 +1,100 @@
 #include "yamitracker.h"
 #include "ui_yamitracker.h"
+#include "styleButton.h"
+#include "buttonGroupY.h"
+#include "styleListButton.h"
 
 yamitracker::yamitracker(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::yamitracker)
 {
     ui->setupUi(this);
+//Группы кнопок
+    trackGroup = createTrackGroup(ui, this);
+    deleteTrackGroup = createDeleteTrackGroup(ui, this);
+    selectTrackGroup = createSelectTrackGroup(ui, this);
+    playStopGroup = createPlayStopGroup(ui, this);
+    whiteNoteGroup = createWhiteNoteGroup(ui, this);
+    blackNoteGroup = createBlackNoteGroup(ui, this);
 
-    //Радио кнопка дорожки
-    trackGroup = new QButtonGroup(this);
-    trackGroup->addButton(ui->track_button_1, 1);
-    trackGroup->addButton(ui->track_button_2, 2);
-    trackGroup->addButton(ui->track_button_3, 3);
-    trackGroup->addButton(ui->track_button_4, 4);
-    trackGroup->addButton(ui->track_button_5, 5);
-    trackGroup->addButton(ui->track_button_6, 6);
-    trackGroup->addButton(ui->track_button_7, 7);
-    trackGroup->setExclusive(true);
-
+//Стили
     setTarckButtonStyles();
+    setSelectTrackButtonStules();
+    setDeleteTarckButtonStyles();
+    ui->START_button->setStyleSheet(checkPlayStop);
+    ui->STOP_button->setStyleSheet(checkPlayStop);
+    styleButton::setStyleFromQString(getButtonsFromGroup(blackNoteGroup), clickBlack);
+
+
+//Дебаг подключение
     connect(trackGroup, QOverload<QAbstractButton*>::of(&QButtonGroup::buttonClicked),
             this, &yamitracker::onTrackSelected);
-
-    deleteTrackGroup = new QButtonGroup(this);
-    deleteTrackGroup->addButton(ui->delete_track_button_1, 1);
-    deleteTrackGroup->addButton(ui->delete_track_button_2, 2);
-    deleteTrackGroup->addButton(ui->delete_track_button_3, 3);
-    deleteTrackGroup->addButton(ui->delete_track_button_4, 4);
-    deleteTrackGroup->addButton(ui->delete_track_button_5, 5);
-    deleteTrackGroup->addButton(ui->delete_track_button_6, 6);
-    deleteTrackGroup->addButton(ui->delete_track_button_7, 7);
-
-    setDeleteTarckButtonStyles();
     connect(deleteTrackGroup, QOverload<QAbstractButton*>::of(&QButtonGroup::buttonClicked),
             this, &yamitracker::onDeleteTrackSelected);
+    connect(whiteNoteGroup, QOverload<QAbstractButton*>::of(&QButtonGroup::buttonClicked),
+            this, &yamitracker::clickNoteButtonDebag);
+    connect(blackNoteGroup, QOverload<QAbstractButton*>::of(&QButtonGroup::buttonClicked),
+            this, &yamitracker::clickNoteButtonDebag);
 
-    selectTrackGroup = new QButtonGroup(this);
-    selectTrackGroup->addButton(ui->delete_track_button_1, 1);
-    selectTrackGroup->addButton(ui->delete_track_button_2, 2);
-    selectTrackGroup->addButton(ui->delete_track_button_3, 3);
-    selectTrackGroup->addButton(ui->delete_track_button_4, 4);
-    selectTrackGroup->addButton(ui->delete_track_button_5, 5);
-    selectTrackGroup->addButton(ui->delete_track_button_6, 6);
-    selectTrackGroup->addButton(ui->delete_track_button_7, 7);
 
-    setSelectTrackButtonStules();
+//Старт стоп клик
+    connect(playStopGroup, QOverload<QAbstractButton*>::of(&QButtonGroup::buttonClicked),
+            this, &yamitracker::playStopClicked);
 
+}
+
+
+QList<QPushButton*> yamitracker::getButtonsFromGroup(QButtonGroup* group) {
+    QList<QPushButton*> result;
+    for (auto* btn : group->buttons()) {
+        if (auto* pushBtn = qobject_cast<QPushButton*>(btn)) {
+            result << pushBtn;
+        }
+    }
+    return result;
+}
+
+bool yamitracker::isRecording(){
+    return ui->START_button->isChecked();
+}
+bool yamitracker::isPause(){
+    return ui->START_button->isChecked();
+}
+
+void yamitracker::playStopClicked(QAbstractButton *button){
+    if(button == ui->START_button){
+        if(isRecording()){
+            qDebug() << "Play Strat";
+            button->setText("■ Стоп");
+        }
+        else{
+            qDebug() << "End recording";
+            button->setText("▶ Старт");
+            ui->STOP_button->setChecked(false);
+            ui->STOP_button->setText("⏸ Пауза");
+        }
+    }
+
+    else{ //ui->STOP_button
+        if(isRecording()){
+            if(button->isChecked()){
+                qDebug() << "Pause recording";
+                button->setText("▶ Продолжить");
+            }
+            else{
+                qDebug() << "Continuation recording";
+                button->setText("⏸ Пауза");
+            }
+        }
+        else{
+            button->setChecked(false);
+        }
+    }
+
+}
+
+void yamitracker::clickNoteButtonDebag(QAbstractButton* button){
+    qDebug() << "Нажата клавиша: " << button->text();
 }
 
 void yamitracker::onDeleteTrackSelected(QAbstractButton *button){
@@ -55,102 +104,19 @@ void yamitracker::onDeleteTrackSelected(QAbstractButton *button){
 void yamitracker::onTrackSelected(QAbstractButton *button)
 {
     qDebug() << "Выбрана дорожка: " << button->text();
-
-    // Ваша логика выбора дорожки
-    // switch(trackGroup->id(button)) {
-    // case 1:
-    //     // Активировать дорожку 1
-    //     break;
-    // case 2:
-    //     // Активировать дорожку 2
-    //     break;
-    // case 3:
-    //     // Активировать дорожку 3
-    //     break;
-    // case 4:
-    //     // Активировать дорожку 4
-    //     break;
-    // case 5:
-    //     // Активировать дорожку 5
-    //     break;
-    // case 6:
-    //     // Активировать дорожку 6
-    //     break;
-    // }
 }
 
 void yamitracker::setDeleteTarckButtonStyles(){
-    QList<QPushButton*> buttons = {
-        ui->delete_track_button_1, ui->delete_track_button_2,
-        ui->delete_track_button_3, ui->delete_track_button_4,
-        ui->delete_track_button_5, ui->delete_track_button_6,
-        ui->delete_track_button_7
-    };
-
-    QString styleSheet =
-        "QPushButton:hover {"
-        "    background-color: #D3D3D3;"
-        "    color: #000000"
-        "}"
-        "QPushButton:click {"
-        "    background-color: #4CAF50;"
-        "    color: white;"
-        "    border: 2px solid #45a049;"
-        "}";
-
-    for (QPushButton *btn : buttons){
-        btn->setStyleSheet(styleSheet);
-    }
+    styleButton::buttonClick(getButtonsFromGroup(deleteTrackGroup));
 }
 
 void yamitracker::setSelectTrackButtonStules(){
-    QList<QPushButton*> button = {
-        ui->select_button_1, ui->select_button_2,
-        ui->select_button_3, ui->select_button_4,
-        ui->select_button_5, ui->select_button_6,
-        ui->select_button_7,
-    };
-
-    QString styleSheet =
-        "QPushButton:hover {"
-        "    background-color: #D3D3D3;"
-        "    color: #000000"
-        "}"
-        "QPushButton:checked {"
-        "    background-color: #4CAF50;"
-        "    color: white;"
-        "    border: 2px solid #45a049;"
-        "}";
-
-    for (QPushButton *btn : button){
-        btn->setCheckable(true);
-        btn->setStyleSheet(styleSheet);
-    }
+    styleButton::buttonCheck(getButtonsFromGroup(selectTrackGroup));
 }
 
 void yamitracker::setTarckButtonStyles()
 {
-    QList<QPushButton*> buttons = {
-        ui->track_button_1, ui->track_button_2, ui->track_button_3,
-        ui->track_button_4, ui->track_button_5, ui->track_button_6,
-        ui->track_button_7
-    };
-
-    QString styleSheet =
-        "QPushButton:hover {"
-        "    background-color: #D3D3D3;"
-        "    color: #000000"
-        "}"
-        "QPushButton:checked {"
-        "    background-color: #4CAF50;"
-        "    color: white;"
-        "    border: 2px solid #45a049;"
-        "}";
-
-    for (QPushButton *btn : buttons) {
-        btn->setCheckable(true);
-        btn->setStyleSheet(styleSheet);
-    }
+    styleButton::buttonCheck(getButtonsFromGroup(trackGroup));
 }
 
 yamitracker::~yamitracker()
@@ -160,12 +126,8 @@ yamitracker::~yamitracker()
 
 void yamitracker::on_select_all_trackbutton_clicked()
 {
-    QList<QPushButton*> buttons = {
-        ui->select_button_1, ui->select_button_2,
-        ui->select_button_3, ui->select_button_4,
-        ui->select_button_5, ui->select_button_6,
-        ui->select_button_7,
-    };
+    QList<QPushButton*> buttons = getButtonsFromGroup(selectTrackGroup);
+
 
     bool allChecked = true;
     for (QPushButton* btn : buttons){
@@ -180,3 +142,4 @@ void yamitracker::on_select_all_trackbutton_clicked()
     }
 
 }
+

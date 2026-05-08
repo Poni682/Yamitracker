@@ -13,6 +13,9 @@
   <property name="windowTitle">
    <string>yamitracker</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">background-color: #363636;</string>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout" rowstretch="1,5,3" columnstretch="1,2">
     <item row="1" column="0">
@@ -35,6 +38,9 @@
               <height>0</height>
              </size>
             </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: &quot;#262626&quot;</string>
+            </property>
             <property name="text">
              <string>Track 1</string>
             </property>
@@ -53,6 +59,9 @@
               <width>150</width>
               <height>0</height>
              </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: &quot;#262626&quot;</string>
             </property>
             <property name="text">
              <string>Track 2</string>
@@ -73,6 +82,9 @@
               <height>0</height>
              </size>
             </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: &quot;#262626&quot;</string>
+            </property>
             <property name="text">
              <string>Trakc 3</string>
             </property>
@@ -91,6 +103,9 @@
               <width>150</width>
               <height>0</height>
              </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: &quot;#262626&quot;</string>
             </property>
             <property name="text">
              <string>Track 4</string>
@@ -111,6 +126,9 @@
               <height>0</height>
              </size>
             </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: &quot;#262626&quot;</string>
+            </property>
             <property name="text">
              <string>Track 5</string>
             </property>
@@ -130,6 +148,9 @@
               <height>0</height>
              </size>
             </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: &quot;#262626&quot;</string>
+            </property>
             <property name="text">
              <string>Track 6</string>
             </property>
@@ -148,6 +169,9 @@
               <width>150</width>
               <height>0</height>
              </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: &quot;#262626&quot;</string>
             </property>
             <property name="text">
              <string>Track 7</string>
@@ -354,6 +378,9 @@
             <property name="text">
              <string>Select</string>
             </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="3" column="0">
@@ -372,6 +399,9 @@
             </property>
             <property name="text">
              <string>Select</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -392,6 +422,9 @@
             <property name="text">
              <string>Select</string>
             </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="4" column="0">
@@ -410,6 +443,9 @@
             </property>
             <property name="text">
              <string>Select</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -430,6 +466,9 @@
             <property name="text">
              <string>Select</string>
             </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="2" column="0">
@@ -449,6 +488,9 @@
             <property name="text">
              <string>Select</string>
             </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="1" column="0">
@@ -467,6 +509,9 @@
             </property>
             <property name="text">
              <string>Select</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -680,7 +725,7 @@
            </size>
           </property>
           <property name="styleSheet">
-           <string notr="true"/>
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>C1</string>
@@ -701,6 +746,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>D1</string>
           </property>
@@ -719,6 +767,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>E1</string>
@@ -739,6 +790,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>F1</string>
           </property>
@@ -757,6 +811,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>G1</string>
@@ -777,6 +834,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>A1</string>
           </property>
@@ -795,6 +855,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>B1</string>
@@ -815,6 +878,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>C2</string>
           </property>
@@ -833,6 +899,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>D2</string>
@@ -853,6 +922,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>E2</string>
           </property>
@@ -871,6 +943,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>F2</string>
@@ -891,6 +966,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>G2</string>
           </property>
@@ -909,6 +987,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>A2</string>
@@ -929,6 +1010,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>B2</string>
           </property>
@@ -947,6 +1031,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>C3</string>
@@ -967,6 +1054,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>D3</string>
           </property>
@@ -985,6 +1075,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>E3</string>
@@ -1005,6 +1098,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>F3</string>
           </property>
@@ -1023,6 +1119,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>G3</string>
@@ -1043,6 +1142,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>A3</string>
           </property>
@@ -1061,6 +1163,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>B3</string>
@@ -1081,6 +1186,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>C4</string>
           </property>
@@ -1099,6 +1207,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>D4</string>
@@ -1119,6 +1230,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>E4</string>
           </property>
@@ -1137,6 +1251,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>F4</string>
@@ -1157,6 +1274,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>G4</string>
           </property>
@@ -1175,6 +1295,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>A4</string>
@@ -1195,6 +1318,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>B4</string>
           </property>
@@ -1213,6 +1339,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>C5</string>
@@ -1233,6 +1362,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>D5</string>
           </property>
@@ -1251,6 +1383,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>E5</string>
@@ -1271,6 +1406,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>F5</string>
           </property>
@@ -1289,6 +1427,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>A5</string>
@@ -1309,6 +1450,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>G5</string>
           </property>
@@ -1328,6 +1472,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
+          </property>
           <property name="text">
            <string>B5</string>
           </property>
@@ -1346,6 +1493,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#DFDFDF&quot;; color: black;</string>
           </property>
           <property name="text">
            <string>C6</string>
@@ -1386,6 +1536,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
+          </property>
           <property name="text">
            <string>C#1</string>
           </property>
@@ -1404,6 +1557,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
           </property>
           <property name="text">
            <string>D#1</string>
@@ -1437,6 +1593,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
+          </property>
           <property name="text">
            <string>F#1</string>
           </property>
@@ -1456,6 +1615,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
+          </property>
           <property name="text">
            <string>G#1</string>
           </property>
@@ -1474,6 +1636,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
           </property>
           <property name="text">
            <string>A#1</string>
@@ -1507,6 +1672,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
+          </property>
           <property name="text">
            <string>C#2</string>
           </property>
@@ -1525,6 +1693,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
           </property>
           <property name="text">
            <string>D#2</string>
@@ -1558,6 +1729,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
+          </property>
           <property name="text">
            <string>F#2</string>
           </property>
@@ -1577,6 +1751,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
+          </property>
           <property name="text">
            <string>G#2</string>
           </property>
@@ -1595,6 +1772,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
           </property>
           <property name="text">
            <string>A#2</string>
@@ -1628,6 +1808,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
+          </property>
           <property name="text">
            <string>C#3</string>
           </property>
@@ -1646,6 +1829,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
           </property>
           <property name="text">
            <string>D#3</string>
@@ -1679,6 +1865,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
+          </property>
           <property name="text">
            <string>F#3</string>
           </property>
@@ -1698,6 +1887,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
+          </property>
           <property name="text">
            <string>G#3</string>
           </property>
@@ -1716,6 +1908,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
           </property>
           <property name="text">
            <string>A#3</string>
@@ -1749,6 +1944,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
+          </property>
           <property name="text">
            <string>C#4</string>
           </property>
@@ -1767,6 +1965,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
           </property>
           <property name="text">
            <string>D#4</string>
@@ -1800,6 +2001,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
+          </property>
           <property name="text">
            <string>F#4</string>
           </property>
@@ -1819,6 +2023,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
+          </property>
           <property name="text">
            <string>G#4</string>
           </property>
@@ -1837,6 +2044,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
           </property>
           <property name="text">
            <string>A#4</string>
@@ -1870,6 +2080,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
+          </property>
           <property name="text">
            <string>C#5</string>
           </property>
@@ -1888,6 +2101,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
           </property>
           <property name="text">
            <string>D#5</string>
@@ -1921,6 +2137,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
+          </property>
           <property name="text">
            <string>F#5</string>
           </property>
@@ -1940,6 +2159,9 @@
             <height>40</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
+          </property>
           <property name="text">
            <string>G#5</string>
           </property>
@@ -1958,6 +2180,9 @@
             <width>40</width>
             <height>40</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: &quot;#050505&quot;</string>
           </property>
           <property name="text">
            <string>A#5</string>
@@ -1984,7 +2209,11 @@
     <item row="1" column="1">
      <layout class="QVBoxLayout" name="redact_layout">
       <item>
-       <widget class="QPlainTextEdit" name="plainTextEdit"/>
+       <widget class="QPlainTextEdit" name="plainTextEdit">
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
+       </widget>
       </item>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -2030,8 +2259,16 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="font">
+           <font>
+            <pointsize>15</pointsize>
+           </font>
+          </property>
           <property name="text">
-           <string>START</string>
+           <string>▶ старт</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -2043,21 +2280,16 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="text">
-           <string>STOP</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="END_button">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
+          <property name="font">
+           <font>
+            <pointsize>15</pointsize>
+           </font>
           </property>
           <property name="text">
-           <string>END</string>
+           <string>⏸ Пауза</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
