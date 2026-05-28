@@ -1,0 +1,424 @@
+#include "yamitracker.h"
+#include "ui_yamitracker.h"
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <QMessageBox>
+#include <QTimer>
+#include <QDebug>
+#include <QDateTime>
+#include <QFileDialog>
+
+void SerialReader::run()
+{
+    while (!shouldStop) {
+        int fd = open(currentDevice.toUtf8().constData(), O_RDWR | O_NOCTTY);
+        if (fd < 0) {
+            emit error(QString("Cannot open %1").arg(currentDevice));
+            emit connectionStatusChanged(false);
+            sleep(2);
+            continue;
+        }
+
+        emit connectionStatusChanged(true);
+        
+        // Определяем производителя по имени устройства
+        QString manufacturer = "Unknown";
+        QString model = "Unknown";
+        
+        if (currentDevice.contains("yamaha", Qt::CaseInsensitive) || 
+            currentDevice.contains("psr", Qt::CaseInsensitive)) {
+            manufacturer = "Yamaha";
+            model = "PSR Series";
+        } else if (currentDevice.contains("dmmidi")) {
+            manufacturer = "Yamaha";
+            model = "PSR-E333 (Direct MIDI)";
+        }
+        
+        emit deviceInfoReceived(manufacturer, model);
+
+        struct termios tty;
+        tcgetattr(fd, &tty);
+        cfsetospeed(&tty, B115200);
+        cfsetispeed(&tty, B115200);
+        tty.c_cflag |= (CLOCAL | CREAD | CS8);
+        tty.c_cc[VMIN] = 1;
+        tcsetattr(fd, TCSANOW, &tty);
+
+        unsigned char byte;
+        while (!shouldStop && read(fd, &byte, 1) > 0) {
+            if (byte == 0xF8 || byte == 0xFE) {
+                continue;
+            }
+
+            if (byte & 0x80) {
+                if ((byte & 0xF0) == 0x90) {
+                    unsigned char note, velocity;
+                    if (read(fd, &note, 1) > 0 && read(fd, &velocity, 1) > 0) {
+                        QString hexNote = QString("%1").arg(note, 2, 16, QChar('0')).toUpper();
+
+                        if (velocity == 0)
+                            emit noteOffReceived(hexNote);
+                        else
+                            emit noteOnReceived(hexNote, velocity);
+                    }
+                }
+                else if ((byte & 0xF0) == 0x80) {
+                    unsigned char note, velocity;
+                    if (read(fd, &note, 1) > 0 && read(fd, &velocity, 1) > 0) {
+                        QString hexNote = QString("%1").arg(note, 2, 16, QChar('0')).toUpper();
+                        emit noteOffReceived(hexNote);
+                    }
+                }
+            }
+        }
+
+        close(fd);
+        emit connectionStatusChanged(false);
+        
+        if (!shouldStop) {
+            emit error(QString("Connection lost to %1. Attempting to reconnect...").arg(currentDevice));
+            sleep(2);
+        }
+    }
+}
+
+Yamitracker::Yamitracker(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::Yamitracker)
+    , serialReader(new SerialReader(this))
+    , reconnectTimer(new QTimer(this))
+    , isConnected(false)
+    , midiWriter(new SimpleMidiWriter())
+    , yamiFile(new yami::YamiFile())
+    , recordingStartTime(0)
+    , deviceDetector(new MidiDeviceDetector())
+{
+    ui->setupUi(this);
+    
+    // Инициализируем ссылки на новые UI элементы
+    deviceLabel = ui->deviceLabel;
+    refreshDevicesButton = ui->refreshDevicesButton;
+    
+    initializeKeyButtons();
+    initializeDeviceDetection();
+
+    connect(serialReader, &SerialReader::noteOnReceived, this, &Yamitracker::onNoteOnReceived);
+    connect(serialReader, &SerialReader::noteOffReceived, this, &Yamitracker::onNoteOffReceived);
+    connect(serialReader, &SerialReader::error, this, &Yamitracker::onError);
+    connect(serialReader, &SerialReader::connectionStatusChanged, this, &Yamitracker::onConnectionStatusChanged);
+    connect(serialReader, &SerialReader::deviceInfoReceived, this, &Yamitracker::onDeviceInfoReceived);
+    connect(ui->playButton, &QPushButton::clicked, this, &Yamitracker::onPlayClicked);
+    connect(ui->stopButton, &QPushButton::clicked, this, &Yamitracker::onStopClicked);
+    connect(refreshDevicesButton, &QPushButton::clicked, this, &Yamitracker::onRefreshDevicesClicked);
+    
+    connect(reconnectTimer, &QTimer::timeout, this, &Yamitracker::attemptReconnect);
+    reconnectTimer->start(5000);
+
+    setStyleSheet(
+        "QMainWindow { background-color: #2b2b2b; color: white; }"
+        "QLabel { color: white; font-size: 14px; }"
+        "QPushButton { border: none; }"
+        "QPushButton[whiteKey=true] { background-color: white; color: black; border: 1px solid #ccc; font-size: 8pt; }"
+        "QPushButton[whiteKey=true]:pressed { background-color: #ff4444; }"
+        "QPushButton[blackKey=true] { background-color: black; color: white; font-size: 7pt; }"
+        "QPushButton[blackKey=true]:pressed { background-color: #ff4444; }"
+        "QProgressBar { border: 1px solid #555; background: #333; }"
+        "QProgressBar::chunk { background: #4CAF50; }"
+    );
+
+    // Автоматическое обнаружение устройства при запуске
+    QTimer::singleShot(1000, this, &Yamitracker::autoDetectAndConnect);
+    setWindowTitle("Yamaha PSR-E333 Monitor");
+}
+
+Yamitracker::~Yamitracker()
+{
+    if (serialReader) {
+        serialReader->stop();
+        if (serialReader->isRunning()) {
+            serialReader->terminate();
+            serialReader->wait();
+        }
+    }
+    delete midiWriter;
+    delete yamiFile;
+    delete deviceDetector;
+    delete ui;
+}
+
+void Yamitracker::initializeDeviceDetection()
+{
+    deviceLabel->setText("Устройство: Поиск...");
+    deviceLabel->setStyleSheet("color: orange;");
+}
+
+void Yamitracker::autoDetectAndConnect()
+{
+    MidiDeviceInfo yamahaDevice = deviceDetector->detectYamahaDevice();
+    
+    if (!yamahaDevice.port.isEmpty()) {
+        serialReader->setDevice(yamahaDevice.port);
+        deviceLabel->setText(QString("Устройство: %1 %2").arg(yamahaDevice.manufacturer, yamahaDevice.model));
+        deviceLabel->setStyleSheet("color: green;");
+        qDebug() << "Auto-detected device:" << yamahaDevice.name << "on port:" << yamahaDevice.port;
+    } else {
+        deviceLabel->setText("Устройство: Не найдено");
+        deviceLabel->setStyleSheet("color: red;");
+    }
+    
+    startSerialReader();
+}
+
+void Yamitracker::onDeviceInfoReceived(const QString &manufacturer, const QString &model)
+{
+    deviceLabel->setText(QString("Устройство: %1 %2").arg(manufacturer, model));
+    deviceLabel->setStyleSheet("color: green;");
+    
+    // Обновляем заголовок окна с информацией об устройстве
+    setWindowTitle(QString("Yamitracker - %1 %2").arg(manufacturer, model));
+}
+
+void Yamitracker::onRefreshDevicesClicked()
+{
+    deviceLabel->setText("Устройство: Обновление...");
+    deviceLabel->setStyleSheet("color: orange;");
+    
+    // Перезапускаем обнаружение
+    autoDetectAndConnect();
+}
+
+void Yamitracker::startSerialReader()
+{
+    if (serialReader && !serialReader->isRunning()) {
+        serialReader->start();
+    }
+}
+
+void Yamitracker::initializeKeyButtons()
+{
+    QList<QPushButton*> whiteKeys = {
+        ui->key_C1, ui->key_D1, ui->key_E1, ui->key_F1, ui->key_G1, ui->key_A1, ui->key_B1,
+        ui->key_C2, ui->key_D2, ui->key_E2, ui->key_F2, ui->key_G2, ui->key_A2, ui->key_B2,
+        ui->key_C3, ui->key_D3, ui->key_E3, ui->key_F3, ui->key_G3, ui->key_A3, ui->key_B3,
+        ui->key_C4, ui->key_D4, ui->key_E4, ui->key_F4, ui->key_G4, ui->key_A4, ui->key_B4,
+        ui->key_C5, ui->key_D5, ui->key_E5, ui->key_F5, ui->key_G5, ui->key_A5, ui->key_B5,
+        ui->key_C6
+    };
+
+    for (QPushButton *key : whiteKeys) {
+        key->setProperty("whiteKey", true);
+        keyButtons[key->text()] = key;
+    }
+
+    QList<QPushButton*> blackKeys = {
+        ui->key_Cs1, ui->key_Ds1, ui->key_Fs1, ui->key_Gs1, ui->key_As1,
+        ui->key_Cs2, ui->key_Ds2, ui->key_Fs2, ui->key_Gs2, ui->key_As2,
+        ui->key_Cs3, ui->key_Ds3, ui->key_Fs3, ui->key_Gs3, ui->key_As3,
+        ui->key_Cs4, ui->key_Ds4, ui->key_Fs4, ui->key_Gs4, ui->key_As4,
+        ui->key_Cs5, ui->key_Ds5, ui->key_Fs5, ui->key_Gs5, ui->key_As5
+    };
+
+    for (QPushButton *key : blackKeys) {
+        key->setProperty("blackKey", true);
+        keyButtons[key->text()] = key;
+    }
+}
+
+void Yamitracker::onNoteOnReceived(const QString &data, int velocity)
+{
+    QHash<QString, QString> noteMapping = {
+        {"24","C1"},{"25","C#1"},{"26","D1"},{"27","D#1"},{"28","E1"},{"29","F1"},{"2A","F#1"},{"2B","G1"},{"2C","G#1"},{"2D","A1"},{"2E","A#1"},{"2F","B1"},
+        {"30","C2"},{"31","C#2"},{"32","D2"},{"33","D#2"},{"34","E2"},{"35","F2"},{"36","F#2"},{"37","G2"},{"38","G#2"},{"39","A2"},{"3A","A#2"},{"3B","B2"},
+        {"3C","C3"},{"3D","C#3"},{"3E","D3"},{"3F","D#3"},{"40","E3"},{"41","F3"},{"42","F#3"},{"43","G3"},{"44","G#3"},{"45","A3"},{"46","A#3"},{"47","B3"},
+        {"48","C4"},{"49","C#4"},{"4A","D4"},{"4B","D#4"},{"4C","E4"},{"4D","F4"},{"4E","F#4"},{"4F","G4"},{"50","G#4"},{"51","A4"},{"52","A#4"},{"53","B4"},
+        {"54","C5"},{"55","C#5"},{"56","D5"},{"57","D#5"},{"58","E5"},{"59","F5"},{"5A","F#5"},{"5B","G5"},{"5C","G#5"},{"5D","A5"},{"5E","A#5"},{"5F","B5"},
+        {"60","C6"}
+    };
+
+    if (!noteMapping.contains(data)) return;
+
+    QString note = noteMapping[data];
+    currentlyPressedKeys.insert(note);
+    highlightKey(note);
+
+    ui->keysInfoLabel->setText(QString("Нажато клавиш: %1").arg(currentlyPressedKeys.size()));
+
+    int volume = (velocity * 100) / 127;
+    ui->volumeBar->setValue(volume);
+
+    if (midiWriter->isRecording()) {
+        double currentTime = QDateTime::currentMSecsSinceEpoch() / 1000.0 - recordingStartTime;
+        
+        bool ok;
+        int noteNumber = data.toInt(&ok, 16);
+        if (ok) {
+            midiWriter->addNoteOn(currentTime, 0, noteNumber, velocity);
+            
+            if (yamiFile->getTracks().empty()) {
+                yamiFile->addTrack(0);
+            }
+            
+            auto& track = yamiFile->getTracks()[0];
+            track.notes.emplace_back(noteNumber, currentTime, 0.0f, velocity);
+            
+            activeNotes[data] = &track.notes.back();
+        }
+    }
+}
+
+void Yamitracker::onNoteOffReceived(const QString &data)
+{
+    QHash<QString, QString> noteMapping = {
+        {"24","C1"},{"25","C#1"},{"26","D1"},{"27","D#1"},{"28","E1"},{"29","F1"},{"2A","F#1"},{"2B","G1"},{"2C","G#1"},{"2D","A1"},{"2E","A#1"},{"2F","B1"},
+        {"30","C2"},{"31","C#2"},{"32","D2"},{"33","D#2"},{"34","E2"},{"35","F2"},{"36","F#2"},{"37","G2"},{"38","G#2"},{"39","A2"},{"3A","A#2"},{"3B","B2"},
+        {"3C","C3"},{"3D","C#3"},{"3E","D3"},{"3F","D#3"},{"40","E3"},{"41","F3"},{"42","F#3"},{"43","G3"},{"44","G#3"},{"45","A3"},{"46","A#3"},{"47","B3"},
+        {"48","C4"},{"49","C#4"},{"4A","D4"},{"4B","D#4"},{"4C","E4"},{"4D","F4"},{"4E","F#4"},{"4F","G4"},{"50","G#4"},{"51","A4"},{"52","A#4"},{"53","B4"},
+        {"54","C5"},{"55","C#5"},{"56","D5"},{"57","D#5"},{"58","E5"},{"59","F5"},{"5A","F#5"},{"5B","G5"},{"5C","G#5"},{"5D","A5"},{"5E","A#5"},{"5F","B5"},
+        {"60","C6"}
+    };
+
+    if (!noteMapping.contains(data)) return;
+
+    QString note = noteMapping[data];
+    currentlyPressedKeys.remove(note);
+    clearKey(note);
+
+    ui->keysInfoLabel->setText(QString("Нажато клавиш: %1").arg(currentlyPressedKeys.size()));
+
+    if (currentlyPressedKeys.isEmpty()) {
+        ui->volumeBar->setValue(0);
+    }
+
+    if (midiWriter->isRecording()) {
+        double currentTime = QDateTime::currentMSecsSinceEpoch() / 1000.0 - recordingStartTime;
+        
+        bool ok;
+        int noteNumber = data.toInt(&ok, 16);
+        if (ok) {
+            midiWriter->addNoteOff(currentTime, 0, noteNumber);
+            
+            if (activeNotes.contains(data)) {
+                yami::Note* activeNote = activeNotes[data];
+                activeNote->duration = currentTime - activeNote->start_time;
+                activeNotes.remove(data);
+            }
+        }
+    }
+}
+
+void Yamitracker::onConnectionStatusChanged(bool connected)
+{
+    isConnected = connected;
+    if (connected) {
+        ui->statusLabel->setText("Статус: Подключено к синтезатору");
+        ui->statusLabel->setStyleSheet("color: green;");
+    } else {
+        ui->statusLabel->setText("Статус: Отключено (переподключение...)");
+        ui->statusLabel->setStyleSheet("color: red;");
+    }
+}
+
+void Yamitracker::attemptReconnect()
+{
+    if (!isConnected && (!serialReader || !serialReader->isRunning())) {
+        qDebug() << "Attempting to reconnect...";
+        startSerialReader();
+    }
+}
+
+void Yamitracker::onError(const QString &message)
+{
+    ui->statusLabel->setText("Ошибка: " + message);
+    ui->statusLabel->setStyleSheet("color: orange;");
+    if (!message.contains("reconnect", Qt::CaseInsensitive)) {
+        QMessageBox::warning(this, "Ошибка", message);
+    }
+}
+
+void Yamitracker::onPlayClicked()
+{
+    ui->statusLabel->setText("Воспроизведение...");
+    ui->statusLabel->setStyleSheet("color: blue;");
+    
+    QString baseFilename = "recording_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
+    
+    yamiFile->clear();
+    yamiFile->addTrack(0);
+    yamiFile->setBPM(120.0f);
+    
+    activeNotes.clear();
+    
+    if (midiWriter->startRecording(baseFilename + ".mid")) {
+        recordingStartTime = QDateTime::currentMSecsSinceEpoch() / 1000.0;
+        qDebug() << "Started recording to:" << baseFilename;
+    }
+}
+
+void Yamitracker::onStopClicked()
+{
+    ui->statusLabel->setText("Остановлено");
+    ui->statusLabel->setStyleSheet("color: white;");
+    clearAllHighlights();
+    currentlyPressedKeys.clear();
+    ui->keysInfoLabel->setText("Нажато клавиш: 0");
+    ui->volumeBar->setValue(0);
+    
+    if (midiWriter->isRecording()) {
+        midiWriter->stopRecording();
+        QString baseFilename = "recording_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
+        saveAllFormats(baseFilename);
+    }
+}
+
+void Yamitracker::saveAllFormats(const QString &baseFilename)
+{
+    QString midiFilename = baseFilename + ".mid";
+    if (midiWriter->saveToFile(midiFilename)) {
+        qDebug() << "MIDI file saved:" << midiFilename;
+    }
+    
+    QString yamiTextFilename = baseFilename + ".yami";
+    if (yamiFile->saveToText(yamiTextFilename.toStdString())) {
+        qDebug() << "YAMI text file saved:" << yamiTextFilename;
+    }
+    
+    QString yamiBinaryFilename = baseFilename + ".yamb";
+    if (yamiFile->saveToBinary(yamiBinaryFilename.toStdString())) {
+        qDebug() << "YAMI binary file saved:" << yamiBinaryFilename;
+    }
+    
+    ui->statusLabel->setText(QString("Сохранено: %1 (MIDI, YAMI текстовый, YAMI бинарный)").arg(baseFilename));
+}
+
+void Yamitracker::highlightKey(const QString &note)
+{
+    if (keyButtons.contains(note)) {
+        QPushButton *key = keyButtons[note];
+        key->setStyleSheet("background-color: #ff4444; color: white; border: 2px solid red;");
+    }
+}
+
+void Yamitracker::clearKey(const QString &note)
+{
+    if (!keyButtons.contains(note)) return;
+    QPushButton *key = keyButtons[note];
+    if (key->property("whiteKey").toBool())
+        key->setStyleSheet("background-color: white; color: black; border: 1px solid #ccc;");
+    else
+        key->setStyleSheet("background-color: black; color: white;");
+}
+
+void Yamitracker::clearAllHighlights()
+{
+    for (auto i = keyButtons.begin(); i != keyButtons.end(); ++i) {
+        clearKey(i.key());
+    }
+}
+
+void Yamitracker::clearStatusMessage()
+{
+    ui->statusLabel->setText("Статус: Готов");
+    ui->statusLabel->setStyleSheet("color: white;");
+}
